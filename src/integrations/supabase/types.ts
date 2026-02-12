@@ -309,6 +309,7 @@ export type Database = {
           hero_title: string | null
           id: string
           is_open: boolean | null
+          logo_height_px: number | null
           logo_url: string | null
           minimum_order: number | null
           name: string
@@ -327,6 +328,7 @@ export type Database = {
           hero_title?: string | null
           id?: string
           is_open?: boolean | null
+          logo_height_px?: number | null
           logo_url?: string | null
           minimum_order?: number | null
           name?: string
@@ -345,6 +347,7 @@ export type Database = {
           hero_title?: string | null
           id?: string
           is_open?: boolean | null
+          logo_height_px?: number | null
           logo_url?: string | null
           minimum_order?: number | null
           name?: string

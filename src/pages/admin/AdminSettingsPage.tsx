@@ -18,6 +18,7 @@ interface Restaurant {
   delivery_fee: number;
   minimum_order: number;
   logo_url: string | null;
+  logo_height_px: number;
   hero_image_url: string | null;
   hero_title: string | null;
   hero_subtitle: string | null;
@@ -84,6 +85,7 @@ const AdminSettingsPage = () => {
       delivery_fee: restaurant.delivery_fee,
       minimum_order: restaurant.minimum_order,
       logo_url: restaurant.logo_url,
+      logo_height_px: restaurant.logo_height_px,
       hero_image_url: restaurant.hero_image_url,
       hero_title: restaurant.hero_title,
       hero_subtitle: restaurant.hero_subtitle,
@@ -128,6 +130,11 @@ const AdminSettingsPage = () => {
               </div>
               <Input value={restaurant.logo_url || ''} onChange={e => update('logo_url', e.target.value)} placeholder="https://..." />
             </div>
+          </div>
+          <div>
+            <Label>Logo Height (px)</Label>
+            <Input type="number" min={24} max={120} value={restaurant.logo_height_px ?? 44} onChange={e => update('logo_height_px', parseInt(e.target.value) || 44)} />
+            <p className="text-xs text-muted-foreground mt-1">Min 24, Max 120. Default is 44px.</p>
           </div>
         </div>
 
