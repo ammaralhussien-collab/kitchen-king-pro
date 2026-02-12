@@ -6,10 +6,50 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+async function validateAdminAuth(req: Request) {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    throw new Error("Unauthorized: Missing or invalid authorization header");
+  }
+
+  const token = authHeader.replace("Bearer ", "");
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!
+  );
+
+  const { data, error } = await supabase.auth.getClaims(token);
+  if (error || !data?.claims) {
+    throw new Error("Unauthorized: Invalid token");
+  }
+
+  const userId = data.claims.sub;
+  
+  // Check if user has admin role
+  const adminCheck = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
+
+  const { data: roleData } = await adminCheck
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "admin")
+    .maybeSingle();
+
+  if (!roleData) {
+    throw new Error("Forbidden: Admin access required");
+  }
+
+  return userId;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    await validateAdminAuth(req);
     const { item_id, force } = await req.json();
     if (!item_id) throw new Error("item_id is required");
 
@@ -95,9 +135,11 @@ Return JSON:
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
+    const errorMessage = e instanceof Error ? e.message : String(e);
+    const isAuthError = errorMessage.includes("Unauthorized") || errorMessage.includes("Forbidden");
     console.error("translate-menu-item error:", e);
-    return new Response(JSON.stringify({ error: e.message }), {
-      status: 500,
+    return new Response(JSON.stringify({ error: errorMessage }), {
+      status: isAuthError ? (errorMessage.includes("Forbidden") ? 403 : 401) : 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

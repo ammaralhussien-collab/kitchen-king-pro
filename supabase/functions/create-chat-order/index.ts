@@ -21,12 +21,33 @@ interface ChatOrderInput {
   items: OrderItemInput[]
 }
 
+async function validateAuth(req: Request) {
+  const authHeader = req.headers.get('Authorization')
+  if (!authHeader?.startsWith('Bearer ')) {
+    throw new Error('Unauthorized: Missing or invalid authorization header')
+  }
+
+  const token = authHeader.replace('Bearer ', '')
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_ANON_KEY')!
+  )
+
+  const { data, error } = await supabase.auth.getClaims(token)
+  if (error || !data?.claims) {
+    throw new Error('Unauthorized: Invalid token')
+  }
+
+  return data.claims.sub
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
+    const userId = await validateAuth(req)
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, serviceRoleKey)
@@ -188,8 +209,11 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (err) {
-    return new Response(JSON.stringify({ error: 'Internal error' }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    const errorMessage = err instanceof Error ? err.message : 'Internal error';
+    const isAuthError = errorMessage.includes('Unauthorized') || errorMessage.includes('Forbidden');
+    return new Response(JSON.stringify({ error: errorMessage }), {
+      status: isAuthError ? (errorMessage.includes('Forbidden') ? 403 : 401) : 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   }
 })
