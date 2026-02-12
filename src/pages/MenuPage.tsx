@@ -53,6 +53,19 @@ const MenuPage = () => {
   const { addItem } = useCart();
   const { t, lang, formatCurrency } = useI18n();
 
+  const categoryKeyMap: Record<string, string> = {
+    'drinks': 'cats.drinks',
+    'desserts': 'cats.desserts',
+    'pizza': 'cats.pizza',
+    'pasta': 'cats.pasta',
+    'appetizers': 'cats.appetizers',
+  };
+
+  const getCategoryLabel = (catName: string) => {
+    const key = categoryKeyMap[catName.toLowerCase()];
+    return key ? t(key as any) : getLocalizedName({ name: catName } as Category, lang);
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       const [catRes, itemRes, restRes] = await Promise.all([
@@ -114,7 +127,7 @@ const MenuPage = () => {
                   : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
               }`}
             >
-              {getLocalizedName(cat, lang)}
+              {getCategoryLabel(cat.name)}
             </button>
           ))}
         </div>
