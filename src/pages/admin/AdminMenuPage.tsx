@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,8 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, GripVertical } from 'lucide-react';
+import { Plus, Pencil, Trash2, GripVertical, Upload, ImageIcon } from 'lucide-react';
 
 interface Category {
   id: string;
@@ -38,6 +39,8 @@ const AdminMenuPage = () => {
   const [restaurantId, setRestaurantId] = useState('');
   const [itemDialogOpen, setItemDialogOpen] = useState(false);
   const [catDialogOpen, setCatDialogOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchData = async () => {
     const [catRes, itemRes, restRes] = await Promise.all([
@@ -72,6 +75,23 @@ const AdminMenuPage = () => {
     await supabase.from('categories').delete().eq('id', id);
     toast.success('Category deleted');
     fetchData();
+  };
+
+  const handleImageUpload = async (file: File) => {
+    setUploading(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${ext}`;
+      const { error } = await supabase.storage.from('menu-images').upload(fileName, file);
+      if (error) throw error;
+      const { data: urlData } = supabase.storage.from('menu-images').getPublicUrl(fileName);
+      setEditingItem(p => ({ ...p, image_url: urlData.publicUrl }));
+      toast.success('Image uploaded');
+    } catch (err: any) {
+      toast.error('Upload failed: ' + err.message);
+    } finally {
+      setUploading(false);
+    }
   };
 
   const saveItem = async () => {
@@ -162,14 +182,58 @@ const AdminMenuPage = () => {
               <Plus className="mr-1 h-3 w-3" /> Add Item
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-lg">
             <DialogHeader><DialogTitle>{editingItem?.id ? 'Edit' : 'New'} Item</DialogTitle></DialogHeader>
-            <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+            <div className="space-y-4 max-h-[65vh] overflow-y-auto pr-1">
               <div><Label>Name</Label><Input value={editingItem?.name || ''} onChange={e => setEditingItem(p => ({ ...p, name: e.target.value }))} /></div>
               <div><Label>Description</Label><Textarea value={editingItem?.description || ''} onChange={e => setEditingItem(p => ({ ...p, description: e.target.value }))} /></div>
-              <div><Label>Price</Label><Input type="number" step="0.01" value={editingItem?.price || ''} onChange={e => setEditingItem(p => ({ ...p, price: parseFloat(e.target.value) }))} /></div>
-              <div><Label>Prep Time (min)</Label><Input type="number" value={editingItem?.prep_time_minutes || ''} onChange={e => setEditingItem(p => ({ ...p, prep_time_minutes: parseInt(e.target.value) }))} /></div>
-              <div><Label>Image URL</Label><Input value={editingItem?.image_url || ''} onChange={e => setEditingItem(p => ({ ...p, image_url: e.target.value }))} placeholder="https://..." /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label>Price</Label><Input type="number" step="0.01" value={editingItem?.price || ''} onChange={e => setEditingItem(p => ({ ...p, price: parseFloat(e.target.value) }))} /></div>
+                <div><Label>Prep Time (min)</Label><Input type="number" value={editingItem?.prep_time_minutes || ''} onChange={e => setEditingItem(p => ({ ...p, prep_time_minutes: parseInt(e.target.value) }))} /></div>
+              </div>
+              <div>
+                <Label>Category</Label>
+                <Select value={editingItem?.category_id || ''} onValueChange={v => setEditingItem(p => ({ ...p, category_id: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                  <SelectContent>
+                    {categories.map(cat => (
+                      <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Image</Label>
+                <div className="mt-1 space-y-2">
+                  {editingItem?.image_url && (
+                    <div className="relative w-full h-32 rounded-md overflow-hidden border border-border">
+                      <img src={editingItem.image_url} alt="Preview" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={e => { if (e.target.files?.[0]) handleImageUpload(e.target.files[0]); }}
+                    />
+                    <Button type="button" variant="outline" size="sm" disabled={uploading} onClick={() => fileInputRef.current?.click()}>
+                      {uploading ? 'Uploading…' : <><Upload className="mr-1 h-3 w-3" /> Upload</>}
+                    </Button>
+                    {!editingItem?.image_url && (
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <ImageIcon className="h-3 w-3" /> Or paste URL below
+                      </div>
+                    )}
+                  </div>
+                  <Input
+                    value={editingItem?.image_url || ''}
+                    onChange={e => setEditingItem(p => ({ ...p, image_url: e.target.value }))}
+                    placeholder="https://... or upload above"
+                  />
+                </div>
+              </div>
               <Button onClick={saveItem} className="w-full">Save</Button>
             </div>
           </DialogContent>
@@ -181,6 +245,9 @@ const AdminMenuPage = () => {
           <div key={item.id} className="flex items-center justify-between rounded-lg border border-border bg-card p-3">
             <div className="flex items-center gap-3">
               <GripVertical className="h-4 w-4 text-muted-foreground" />
+              {item.image_url && (
+                <img src={item.image_url} alt={item.name} className="h-10 w-10 rounded object-cover" />
+              )}
               <div>
                 <span className="font-medium">{item.name}</span>
                 <span className="ml-2 text-sm text-primary font-semibold">${item.price.toFixed(2)}</span>
