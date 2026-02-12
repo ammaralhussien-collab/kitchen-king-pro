@@ -27,9 +27,20 @@ const de = {
   'app.min': 'Min',
   'app.prepTime': 'Zubereitungszeit',
 
+  // Home/Hero
+  'home.heroTitle': 'Freude in jedem Bissen',
+  'home.heroSubtitle': 'Schnell, frisch und unglaublich lecker',
+
   // Hero
   'hero.title': 'Unsere Speisekarte',
   'hero.subtitle': 'Authentische Küche, mit Liebe zubereitet',
+
+  // Categories
+  'cats.drinks': 'Getränke',
+  'cats.desserts': 'Desserts',
+  'cats.pizza': 'Pizza',
+  'cats.pasta': 'Pasta',
+  'cats.appetizers': 'Vorspeisen',
 
   // Menu
   'menu.title': 'Speisekarte',
@@ -232,8 +243,17 @@ const en: Record<TranslationKey, string> = {
   'app.min': 'min',
   'app.prepTime': 'prep time',
 
+  'home.heroTitle': 'Joy in every bite',
+  'home.heroSubtitle': 'Fast, fresh and incredibly tasty',
+
   'hero.title': 'Our Menu',
   'hero.subtitle': 'Authentic cuisine, made with love',
+
+  'cats.drinks': 'Drinks',
+  'cats.desserts': 'Desserts',
+  'cats.pizza': 'Pizza',
+  'cats.pasta': 'Pasta',
+  'cats.appetizers': 'Appetizers',
 
   'menu.title': 'Menu',
 
@@ -424,8 +444,17 @@ const ar: Record<TranslationKey, string> = {
   'app.min': 'دقيقة',
   'app.prepTime': 'وقت التحضير',
 
+  'home.heroTitle': 'متعة في كل لقمة',
+  'home.heroSubtitle': 'سريع وطازج وشهي للغاية',
+
   'hero.title': 'قائمتنا',
   'hero.subtitle': 'مأكولات أصيلة، محضّرة بحب',
+
+  'cats.drinks': 'المشروبات',
+  'cats.desserts': 'الحلويات',
+  'cats.pizza': 'البيتزا',
+  'cats.pasta': 'المكرونة',
+  'cats.appetizers': 'المقبلات',
 
   'menu.title': 'القائمة',
 
