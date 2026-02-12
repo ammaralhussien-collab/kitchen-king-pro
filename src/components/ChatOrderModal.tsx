@@ -3,18 +3,20 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
 import { useI18n } from '@/i18n/I18nProvider';
+import { getLocalizedName } from '@/lib/localize';
 import { X, Send, Truck, Store, Search, Plus, Minus, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { motion, AnimatePresence } from 'framer-motion';
 
-interface Category { id: string; name: string }
+interface Category { id: string; name: string; name_en?: string | null; name_de?: string | null; name_ar?: string | null }
 interface MenuItem {
-  id: string; name: string; price: number; category_id: string;
+  id: string; name: string; name_en?: string | null; name_de?: string | null; name_ar?: string | null;
+  price: number; category_id: string;
   image_url: string | null; is_offer: boolean | null;
   offer_price: number | null; offer_badge: string | null;
 }
-interface Addon { id: string; name: string; price: number; item_id: string }
+interface Addon { id: string; name: string; name_en?: string | null; name_de?: string | null; name_ar?: string | null; price: number; item_id: string }
 
 type Step = 'order_type' | 'contact' | 'address' | 'items' | 'item_detail' | 'summary' | 'confirmed';
 
@@ -28,7 +30,7 @@ const getPrice = (item: MenuItem) => (item.is_offer && item.offer_price) ? item.
 export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () => void }) => {
   const navigate = useNavigate();
   const { items: cartItems, addItem, removeItem, subtotal, itemCount } = useCart();
-  const { t, formatCurrency } = useI18n();
+  const { t, lang, formatCurrency } = useI18n();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [step, setStep] = useState<Step>('order_type');
@@ -67,14 +69,14 @@ export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () =
     if (!open) return;
     const load = async () => {
       const [catRes, itemRes, addonRes, restRes] = await Promise.all([
-        supabase.from('categories').select('id, name').eq('is_active', true).order('sort_order'),
+        supabase.from('categories').select('*').eq('is_active', true).order('sort_order'),
         supabase.from('items').select('*').eq('is_available', true).order('sort_order'),
         supabase.from('item_addons').select('*').eq('is_available', true),
         supabase.from('restaurants').select('id, delivery_fee').limit(1).single(),
       ]);
-      if (catRes.data) { setCategories(catRes.data); setActiveCategory(catRes.data[0]?.id || null); }
-      if (itemRes.data) setMenuItems(itemRes.data as MenuItem[]);
-      if (addonRes.data) setAllAddons(addonRes.data);
+      if (catRes.data) { setCategories(catRes.data as any); setActiveCategory(catRes.data[0]?.id || null); }
+      if (itemRes.data) setMenuItems(itemRes.data as any);
+      if (addonRes.data) setAllAddons(addonRes.data as any);
       if (restRes.data) { setRestaurantId(restRes.data.id); setDeliveryFee(Number(restRes.data.delivery_fee) || 0); }
     };
     load();
@@ -134,19 +136,21 @@ export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () =
     const itemAddons = allAddons
       .filter(a => a.item_id === editingItem.id && editAddons.has(a.id));
     
+    const localName = getLocalizedName(editingItem, lang);
+
     addItem({
       id: crypto.randomUUID(),
       itemId: editingItem.id,
-      name: editingItem.name,
+      name: localName,
       price: getPrice(editingItem),
       quantity: editQty,
-      addons: itemAddons.map(a => ({ id: a.id, name: a.name, price: a.price })),
+      addons: itemAddons.map(a => ({ id: a.id, name: getLocalizedName(a, lang), price: a.price })),
       notes: editNotes,
       image_url: editingItem.image_url ?? undefined,
     });
 
-    const addonText = itemAddons.length > 0 ? ` + ${itemAddons.map(a => a.name).join(', ')}` : '';
-    addMsg('user', `✅ ${editQty}x ${editingItem.name}${addonText}`);
+    const addonText = itemAddons.length > 0 ? ` + ${itemAddons.map(a => getLocalizedName(a, lang)).join(', ')}` : '';
+    addMsg('user', `✅ ${editQty}x ${localName}${addonText}`);
     setEditingItem(null);
     setStep('items');
   };
@@ -193,7 +197,8 @@ export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () =
 
   const filteredItems = menuItems.filter(i => {
     const matchesCategory = !activeCategory || i.category_id === activeCategory;
-    const matchesSearch = !searchQuery || i.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const localName = getLocalizedName(i, lang);
+    const matchesSearch = !searchQuery || localName.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
@@ -285,38 +290,41 @@ export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () =
                       className={`whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                         activeCategory === cat.id ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'
                       }`}>
-                      {cat.name}
+                      {getLocalizedName(cat, lang)}
                     </button>
                   ))}
                 </div>
 
                 {/* Item cards */}
                 <div className="max-h-48 space-y-1.5 overflow-y-auto">
-                  {filteredItems.map(item => (
-                    <button key={item.id} onClick={() => openItemDetail(item)}
-                      className="flex w-full items-center gap-3 rounded-lg border border-border p-2 text-left hover:bg-muted/50 transition-colors">
-                      {item.image_url ? (
-                        <img src={item.image_url} alt={item.name} className="h-10 w-10 rounded-md object-cover" />
-                      ) : (
-                        <div className="flex h-10 w-10 items-center justify-center rounded-md bg-muted text-lg">🍽️</div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1">
-                          <span className="text-sm font-medium truncate">{item.name}</span>
-                          {item.is_offer && item.offer_badge && (
-                            <span className="rounded-full bg-accent px-1.5 py-0.5 text-[9px] font-semibold text-accent-foreground">{item.offer_badge}</span>
-                          )}
+                  {filteredItems.map(item => {
+                    const localName = getLocalizedName(item, lang);
+                    return (
+                      <button key={item.id} onClick={() => openItemDetail(item)}
+                        className="flex w-full items-center gap-3 rounded-lg border border-border p-2 text-left hover:bg-muted/50 transition-colors">
+                        {item.image_url ? (
+                          <img src={item.image_url} alt={localName} className="h-10 w-10 rounded-md object-cover" />
+                        ) : (
+                          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-muted text-lg">🍽️</div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1">
+                            <span className="text-sm font-medium truncate">{localName}</span>
+                            {item.is_offer && item.offer_badge && (
+                              <span className="rounded-full bg-accent px-1.5 py-0.5 text-[9px] font-semibold text-accent-foreground">{item.offer_badge}</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs font-semibold text-primary">{formatCurrency(getPrice(item))}</span>
+                            {item.is_offer && item.offer_price && (
+                              <span className="text-[10px] text-muted-foreground line-through">{formatCurrency(item.price)}</span>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <span className="text-xs font-semibold text-primary">{formatCurrency(getPrice(item))}</span>
-                          {item.is_offer && item.offer_price && (
-                            <span className="text-[10px] text-muted-foreground line-through">{formatCurrency(item.price)}</span>
-                          )}
-                        </div>
-                      </div>
-                      <Plus className="h-4 w-4 text-primary shrink-0" />
-                    </button>
-                  ))}
+                        <Plus className="h-4 w-4 text-primary shrink-0" />
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {/* Cart items summary */}
@@ -342,12 +350,12 @@ export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () =
               <div className="space-y-3 rounded-lg border border-border p-3 pt-1">
                 <div className="flex items-center gap-3">
                   {editingItem.image_url ? (
-                    <img src={editingItem.image_url} alt={editingItem.name} className="h-14 w-14 rounded-lg object-cover" />
+                    <img src={editingItem.image_url} alt={getLocalizedName(editingItem, lang)} className="h-14 w-14 rounded-lg object-cover" />
                   ) : (
                     <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-muted text-2xl">🍽️</div>
                   )}
                   <div>
-                    <h4 className="font-semibold text-sm">{editingItem.name}</h4>
+                    <h4 className="font-semibold text-sm">{getLocalizedName(editingItem, lang)}</h4>
                     <span className="text-sm font-bold text-primary">{formatCurrency(getPrice(editingItem))}</span>
                   </div>
                 </div>
@@ -372,7 +380,7 @@ export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () =
                           <input type="checkbox" checked={editAddons.has(addon.id)}
                             onChange={() => setEditAddons(prev => { const n = new Set(prev); n.has(addon.id) ? n.delete(addon.id) : n.add(addon.id); return n; })}
                             className="h-3.5 w-3.5 rounded border-border" />
-                          <span>{addon.name}</span>
+                          <span>{getLocalizedName(addon, lang)}</span>
                         </div>
                         <span className="text-muted-foreground">+{formatCurrency(addon.price)}</span>
                       </label>

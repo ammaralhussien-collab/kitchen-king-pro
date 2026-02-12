@@ -130,14 +130,14 @@ const CheckoutPage = () => {
         const waUrl = buildWhatsAppUrl(restaurantPhone, buildWhatsAppMessage(waData));
         window.open(waUrl, '_blank');
       } else if (restaurantPhone && !isValidE164(restaurantPhone)) {
-        toast.error('Restaurant phone is not in E.164 format. Please ask admin to update it in Settings.');
+        toast.error(t('error.phoneNotE164'));
       }
 
       clearCart();
       toast.success(t('checkout.orderSuccess'));
       navigate(`/order/${order.id}`);
     } catch (err: any) {
-      toast.error(err.message || 'Failed to place order');
+      toast.error(err.message || t('error.orderFailed'));
     } finally {
       setLoading(false);
     }

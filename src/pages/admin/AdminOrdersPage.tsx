@@ -5,6 +5,7 @@ import { useI18n } from '@/i18n/I18nProvider';
 import StatusBadge from '@/components/StatusBadge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Bell } from 'lucide-react';
+import type { TranslationKey } from '@/i18n/translations';
 
 interface Order {
   id: string;
@@ -55,6 +56,13 @@ const AdminOrdersPage = () => {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
+  const getStatusLabel = (s: string) => {
+    if (s === 'all') return t('admin.allOrders');
+    const key = `status.${s}` as TranslationKey;
+    const val = t(key);
+    return val !== key ? val : s.replace('_', ' ');
+  };
+
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
@@ -72,7 +80,7 @@ const AdminOrdersPage = () => {
           </SelectTrigger>
           <SelectContent>
             {statuses.map(s => (
-              <SelectItem key={s} value={s}>{s === 'all' ? t('admin.allOrders') : s.replace('_', ' ')}</SelectItem>
+              <SelectItem key={s} value={s}>{getStatusLabel(s)}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -91,7 +99,7 @@ const AdminOrdersPage = () => {
                 <StatusBadge status={order.status} />
               </div>
               <div className="mt-1 flex gap-3 text-xs text-muted-foreground">
-                <span>{order.order_type}</span>
+                <span>{order.order_type === 'delivery' ? t('checkout.delivery') : t('checkout.pickup')}</span>
                 <span>{order.customer_phone}</span>
                 <span>{new Date(order.created_at).toLocaleTimeString()}</span>
               </div>

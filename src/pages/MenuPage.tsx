@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
 import { useI18n } from '@/i18n/I18nProvider';
+import { getLocalizedName, getLocalizedDesc } from '@/lib/localize';
 import { Plus, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
@@ -12,6 +13,9 @@ import ChatOrderButton from '@/components/ChatOrderButton';
 interface Category {
   id: string;
   name: string;
+  name_en: string | null;
+  name_de: string | null;
+  name_ar: string | null;
   description: string | null;
 }
 
@@ -19,7 +23,13 @@ interface Item {
   id: string;
   category_id: string;
   name: string;
+  name_en: string | null;
+  name_de: string | null;
+  name_ar: string | null;
   description: string | null;
+  desc_en: string | null;
+  desc_de: string | null;
+  desc_ar: string | null;
   price: number;
   image_url: string | null;
   is_available: boolean;
@@ -41,7 +51,7 @@ const MenuPage = () => {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [hero, setHero] = useState<HeroData>({ hero_image_url: null, hero_title: null, hero_subtitle: null });
   const { addItem } = useCart();
-  const { t, formatCurrency } = useI18n();
+  const { t, lang, formatCurrency } = useI18n();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -51,10 +61,10 @@ const MenuPage = () => {
         supabase.from('restaurants').select('hero_image_url, hero_title, hero_subtitle').limit(1).single(),
       ]);
       if (catRes.data) {
-        setCategories(catRes.data);
+        setCategories(catRes.data as any);
         if (catRes.data.length > 0) setActiveCategory(catRes.data[0].id);
       }
-      if (itemRes.data) setItems(itemRes.data);
+      if (itemRes.data) setItems(itemRes.data as any);
       if (restRes.data) setHero(restRes.data);
     };
     fetchData();
@@ -63,17 +73,18 @@ const MenuPage = () => {
   const getEffectivePrice = (item: Item) => (item.is_offer && item.offer_price) ? item.offer_price : item.price;
 
   const quickAdd = (item: Item) => {
+    const localName = getLocalizedName(item, lang);
     addItem({
       id: crypto.randomUUID(),
       itemId: item.id,
-      name: item.name,
+      name: localName,
       price: getEffectivePrice(item),
       quantity: 1,
       addons: [],
       notes: '',
       image_url: item.image_url,
     });
-    toast.success(`${item.name} ${t('item.addedToCart')}`);
+    toast.success(`${localName} ${t('item.addedToCart')}`);
   };
 
   const filteredItems = activeCategory ? items.filter(i => i.category_id === activeCategory) : items;
@@ -103,7 +114,7 @@ const MenuPage = () => {
                   : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
               }`}
             >
-              {cat.name}
+              {getLocalizedName(cat, lang)}
             </button>
           ))}
         </div>
@@ -121,7 +132,7 @@ const MenuPage = () => {
               <Link to={`/item/${item.id}`}>
                 <div className="aspect-[4/3] overflow-hidden bg-muted">
                   {item.image_url ? (
-                    <img src={item.image_url} alt={item.name} className="h-full w-full object-cover transition-transform group-hover:scale-105" />
+                    <img src={item.image_url} alt={getLocalizedName(item, lang)} className="h-full w-full object-cover transition-transform group-hover:scale-105" />
                   ) : (
                     <div className="flex h-full items-center justify-center text-4xl">🍽️</div>
                   )}
@@ -131,9 +142,9 @@ const MenuPage = () => {
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <Link to={`/item/${item.id}`} className="font-display text-lg font-semibold text-foreground hover:text-primary transition-colors">
-                      {item.name}
+                      {getLocalizedName(item, lang)}
                     </Link>
-                    <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{item.description}</p>
+                    <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{getLocalizedDesc(item, lang)}</p>
                   </div>
                   <div className="shrink-0 text-right">
                     <span className="font-display text-lg font-bold text-primary">{formatCurrency(getEffectivePrice(item))}</span>

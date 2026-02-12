@@ -21,6 +21,9 @@ export type Database = {
           id: string
           is_active: boolean | null
           name: string
+          name_ar: string | null
+          name_de: string | null
+          name_en: string | null
           restaurant_id: string
           sort_order: number | null
         }
@@ -30,6 +33,9 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name: string
+          name_ar?: string | null
+          name_de?: string | null
+          name_en?: string | null
           restaurant_id: string
           sort_order?: number | null
         }
@@ -39,6 +45,9 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name?: string
+          name_ar?: string | null
+          name_de?: string | null
+          name_en?: string | null
           restaurant_id?: string
           sort_order?: number | null
         }
@@ -59,6 +68,9 @@ export type Database = {
           is_available: boolean | null
           item_id: string
           name: string
+          name_ar: string | null
+          name_de: string | null
+          name_en: string | null
           price: number
         }
         Insert: {
@@ -67,6 +79,9 @@ export type Database = {
           is_available?: boolean | null
           item_id: string
           name: string
+          name_ar?: string | null
+          name_de?: string | null
+          name_en?: string | null
           price?: number
         }
         Update: {
@@ -75,6 +90,9 @@ export type Database = {
           is_available?: boolean | null
           item_id?: string
           name?: string
+          name_ar?: string | null
+          name_de?: string | null
+          name_en?: string | null
           price?: number
         }
         Relationships: [
@@ -91,12 +109,18 @@ export type Database = {
         Row: {
           category_id: string
           created_at: string | null
+          desc_ar: string | null
+          desc_de: string | null
+          desc_en: string | null
           description: string | null
           id: string
           image_url: string | null
           is_available: boolean | null
           is_offer: boolean | null
           name: string
+          name_ar: string | null
+          name_de: string | null
+          name_en: string | null
           offer_badge: string | null
           offer_price: number | null
           prep_time_minutes: number | null
@@ -107,12 +131,18 @@ export type Database = {
         Insert: {
           category_id: string
           created_at?: string | null
+          desc_ar?: string | null
+          desc_de?: string | null
+          desc_en?: string | null
           description?: string | null
           id?: string
           image_url?: string | null
           is_available?: boolean | null
           is_offer?: boolean | null
           name: string
+          name_ar?: string | null
+          name_de?: string | null
+          name_en?: string | null
           offer_badge?: string | null
           offer_price?: number | null
           prep_time_minutes?: number | null
@@ -123,12 +153,18 @@ export type Database = {
         Update: {
           category_id?: string
           created_at?: string | null
+          desc_ar?: string | null
+          desc_de?: string | null
+          desc_en?: string | null
           description?: string | null
           id?: string
           image_url?: string | null
           is_available?: boolean | null
           is_offer?: boolean | null
           name?: string
+          name_ar?: string | null
+          name_de?: string | null
+          name_en?: string | null
           offer_badge?: string | null
           offer_price?: number | null
           prep_time_minutes?: number | null

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
 import { useI18n } from '@/i18n/I18nProvider';
+import { getLocalizedName, getLocalizedDesc } from '@/lib/localize';
 import { Minus, Plus, ArrowLeft, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,13 @@ import { Checkbox } from '@/components/ui/checkbox';
 interface Item {
   id: string;
   name: string;
+  name_en: string | null;
+  name_de: string | null;
+  name_ar: string | null;
   description: string | null;
+  desc_en: string | null;
+  desc_de: string | null;
+  desc_ar: string | null;
   price: number;
   image_url: string | null;
   prep_time_minutes: number | null;
@@ -23,6 +30,9 @@ interface Item {
 interface Addon {
   id: string;
   name: string;
+  name_en: string | null;
+  name_de: string | null;
+  name_ar: string | null;
   price: number;
   is_available: boolean;
 }
@@ -31,7 +41,7 @@ const ItemDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { addItem } = useCart();
-  const { t, formatCurrency } = useI18n();
+  const { t, lang, formatCurrency } = useI18n();
   const [item, setItem] = useState<Item | null>(null);
   const [addons, setAddons] = useState<Addon[]>([]);
   const [selectedAddons, setSelectedAddons] = useState<Set<string>>(new Set());
@@ -45,13 +55,16 @@ const ItemDetailPage = () => {
         supabase.from('items').select('*').eq('id', id).single(),
         supabase.from('item_addons').select('*').eq('item_id', id).eq('is_available', true),
       ]);
-      if (itemRes.data) setItem(itemRes.data);
-      if (addonRes.data) setAddons(addonRes.data);
+      if (itemRes.data) setItem(itemRes.data as any);
+      if (addonRes.data) setAddons(addonRes.data as any);
     };
     fetch();
   }, [id]);
 
   if (!item) return <div className="flex h-96 items-center justify-center text-muted-foreground">{t('app.loading')}</div>;
+
+  const localName = getLocalizedName(item, lang);
+  const localDesc = getLocalizedDesc(item, lang);
 
   const toggleAddon = (addonId: string) => {
     setSelectedAddons(prev => {
@@ -70,14 +83,14 @@ const ItemDetailPage = () => {
     addItem({
       id: crypto.randomUUID(),
       itemId: item.id,
-      name: item.name,
+      name: localName,
       price: effectivePrice,
       quantity,
-      addons: selectedAddonsList.map(a => ({ id: a.id, name: a.name, price: a.price })),
+      addons: selectedAddonsList.map(a => ({ id: a.id, name: getLocalizedName(a, lang), price: a.price })),
       notes,
       image_url: item.image_url,
     });
-    toast.success(`${item.name} ${t('item.addedToCart')}`);
+    toast.success(`${localName} ${t('item.addedToCart')}`);
     navigate('/menu');
   };
 
@@ -89,7 +102,7 @@ const ItemDetailPage = () => {
 
       {item.image_url ? (
         <div className="aspect-video overflow-hidden rounded-xl bg-muted">
-          <img src={item.image_url} alt={item.name} className="h-full w-full object-cover" />
+          <img src={item.image_url} alt={localName} className="h-full w-full object-cover" />
         </div>
       ) : (
         <div className="flex aspect-video items-center justify-center rounded-xl bg-muted text-6xl">🍽️</div>
@@ -97,7 +110,7 @@ const ItemDetailPage = () => {
 
       <div className="mt-6">
         <div className="flex items-start justify-between gap-4">
-          <h1 className="font-display text-2xl font-bold">{item.name}</h1>
+          <h1 className="font-display text-2xl font-bold">{localName}</h1>
           <div className="text-right">
             <span className="font-display text-2xl font-bold text-primary">{formatCurrency(effectivePrice)}</span>
             {item.is_offer && item.offer_price && (
@@ -110,7 +123,7 @@ const ItemDetailPage = () => {
             <Clock className="h-3.5 w-3.5" /> {item.prep_time_minutes} {t('app.min')} {t('app.prepTime')}
           </span>
         )}
-        <p className="mt-3 text-muted-foreground">{item.description}</p>
+        <p className="mt-3 text-muted-foreground">{localDesc}</p>
       </div>
 
       {addons.length > 0 && (
@@ -121,7 +134,7 @@ const ItemDetailPage = () => {
               <label key={addon.id} className="flex cursor-pointer items-center justify-between rounded-lg border border-border p-3 transition-colors hover:bg-muted/50">
                 <div className="flex items-center gap-3">
                   <Checkbox checked={selectedAddons.has(addon.id)} onCheckedChange={() => toggleAddon(addon.id)} />
-                  <span className="text-sm font-medium">{addon.name}</span>
+                  <span className="text-sm font-medium">{getLocalizedName(addon, lang)}</span>
                 </div>
                 <span className="text-sm text-muted-foreground">+{formatCurrency(addon.price)}</span>
               </label>
