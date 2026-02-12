@@ -17,6 +17,7 @@ interface Restaurant {
   delivery_radius_km: number;
   delivery_fee: number;
   minimum_order: number;
+  logo_url: string | null;
   hero_image_url: string | null;
   hero_title: string | null;
   hero_subtitle: string | null;
@@ -26,7 +27,9 @@ const AdminSettingsPage = () => {
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [loading, setLoading] = useState(false);
   const [heroUploading, setHeroUploading] = useState(false);
+  const [logoUploading, setLogoUploading] = useState(false);
   const heroFileRef = useRef<HTMLInputElement>(null);
+  const logoFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     supabase.from('restaurants').select('*').limit(1).single().then(({ data }) => {
@@ -51,6 +54,23 @@ const AdminSettingsPage = () => {
     }
   };
 
+  const handleLogoUpload = async (file: File) => {
+    setLogoUploading(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const fileName = `logo-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from('menu-images').upload(fileName, file);
+      if (error) throw error;
+      const { data: urlData } = supabase.storage.from('menu-images').getPublicUrl(fileName);
+      update('logo_url', urlData.publicUrl);
+      toast.success('Logo uploaded');
+    } catch (err: any) {
+      toast.error('Upload failed: ' + err.message);
+    } finally {
+      setLogoUploading(false);
+    }
+  };
+
   const save = async () => {
     if (!restaurant) return;
     setLoading(true);
@@ -63,6 +83,7 @@ const AdminSettingsPage = () => {
       delivery_radius_km: restaurant.delivery_radius_km,
       delivery_fee: restaurant.delivery_fee,
       minimum_order: restaurant.minimum_order,
+      logo_url: restaurant.logo_url,
       hero_image_url: restaurant.hero_image_url,
       hero_title: restaurant.hero_title,
       hero_subtitle: restaurant.hero_subtitle,
@@ -87,6 +108,27 @@ const AdminSettingsPage = () => {
             <p className="text-xs text-muted-foreground">Toggle to accept orders</p>
           </div>
           <Switch checked={restaurant.is_open} onCheckedChange={v => update('is_open', v)} />
+        </div>
+
+        <div className="space-y-4 rounded-xl border border-border bg-card p-4">
+          <h3 className="font-display font-semibold">Logo</h3>
+          <div>
+            <Label>Restaurant Logo</Label>
+            <div className="mt-1 space-y-2">
+              {restaurant.logo_url && (
+                <div className="relative w-20 h-20 rounded-md overflow-hidden border border-border">
+                  <img src={restaurant.logo_url} alt="Logo preview" className="w-full h-full object-contain" />
+                </div>
+              )}
+              <div className="flex gap-2">
+                <input ref={logoFileRef} type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) handleLogoUpload(e.target.files[0]); }} />
+                <Button type="button" variant="outline" size="sm" disabled={logoUploading} onClick={() => logoFileRef.current?.click()}>
+                  {logoUploading ? 'Uploading…' : <><Upload className="mr-1 h-3 w-3" /> Upload</>}
+                </Button>
+              </div>
+              <Input value={restaurant.logo_url || ''} onChange={e => update('logo_url', e.target.value)} placeholder="https://..." />
+            </div>
+          </div>
         </div>
 
         <div className="space-y-4 rounded-xl border border-border bg-card p-4">
