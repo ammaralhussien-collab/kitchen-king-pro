@@ -1,13 +1,35 @@
-import { Link, Outlet, useLocation, Navigate } from 'react-router-dom';
+import { Link, Outlet, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { ClipboardList, UtensilsCrossed, Settings, ChefHat } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/i18n/I18nProvider';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { useEffect, useState } from 'react';
 
 const AdminLayout = () => {
   const { user, isAdmin, loading } = useAuth();
   const { t } = useI18n();
   const location = useLocation();
+  const navigate = useNavigate();
+  const [verified, setVerified] = useState(false);
+
+  useEffect(() => {
+    const verifyAdmin = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .maybeSingle();
+      if (!data) {
+        navigate('/auth', { replace: true });
+      } else {
+        setVerified(true);
+      }
+    };
+    verifyAdmin();
+  }, [user, navigate]);
 
   const navItems = [
     { to: '/admin/orders', label: t('admin.orders'), icon: ClipboardList },
@@ -15,7 +37,7 @@ const AdminLayout = () => {
     { to: '/admin/settings', label: t('admin.settings'), icon: Settings },
   ];
 
-  if (loading) return <div className="flex h-screen items-center justify-center"><span className="animate-pulse-soft text-muted-foreground">{t('app.loading')}</span></div>;
+  if (loading || !verified) return <div className="flex h-screen items-center justify-center"><span className="animate-pulse-soft text-muted-foreground">{t('app.loading')}</span></div>;
   if (!user || !isAdmin) return <Navigate to="/auth" replace />;
 
   return (
