@@ -5,7 +5,7 @@ import { useCart } from '@/contexts/CartContext';
 import { Plus, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
-import heroImg from '@/assets/hero-restaurant.jpg';
+import heroImgFallback from '@/assets/hero-restaurant.jpg';
 
 interface Category {
   id: string;
@@ -24,23 +24,32 @@ interface Item {
   prep_time_minutes: number | null;
 }
 
+interface HeroData {
+  hero_image_url: string | null;
+  hero_title: string | null;
+  hero_subtitle: string | null;
+}
+
 const MenuPage = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [hero, setHero] = useState<HeroData>({ hero_image_url: null, hero_title: null, hero_subtitle: null });
   const { addItem } = useCart();
 
   useEffect(() => {
     const fetchData = async () => {
-      const [catRes, itemRes] = await Promise.all([
+      const [catRes, itemRes, restRes] = await Promise.all([
         supabase.from('categories').select('*').eq('is_active', true).order('sort_order'),
         supabase.from('items').select('*').eq('is_available', true).order('sort_order'),
+        supabase.from('restaurants').select('hero_image_url, hero_title, hero_subtitle').limit(1).single(),
       ]);
       if (catRes.data) {
         setCategories(catRes.data);
         if (catRes.data.length > 0) setActiveCategory(catRes.data[0].id);
       }
       if (itemRes.data) setItems(itemRes.data);
+      if (restRes.data) setHero(restRes.data);
     };
     fetchData();
   }, []);
@@ -65,11 +74,11 @@ const MenuPage = () => {
     <div>
       {/* Hero */}
       <div className="relative h-48 overflow-hidden md:h-64">
-        <img src={heroImg} alt="Restaurant" className="h-full w-full object-cover" />
+        <img src={hero.hero_image_url || heroImgFallback} alt="Restaurant" className="h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
         <div className="absolute bottom-4 left-0 right-0 container">
-          <h1 className="text-3xl font-bold text-foreground md:text-4xl">Our Menu</h1>
-          <p className="mt-1 text-muted-foreground">Authentic Italian cuisine, made with love</p>
+          <h1 className="text-3xl font-bold text-foreground md:text-4xl">{hero.hero_title || 'Our Menu'}</h1>
+          <p className="mt-1 text-muted-foreground">{hero.hero_subtitle || 'Authentic Italian cuisine, made with love'}</p>
         </div>
       </div>
 
