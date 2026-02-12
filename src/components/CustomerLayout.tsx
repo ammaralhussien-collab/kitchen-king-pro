@@ -47,18 +47,20 @@ const CustomerLayout = () => {
             {/* Language Switcher */}
             <div className="flex items-center rounded-md border border-border overflow-hidden text-xs">
               {supportedLanguages.map((l) => (
-                <button
-                  key={l}
-                  onClick={() => setLang(l)}
-                  className={`px-2 py-1 font-medium transition-colors ${
-                    lang === l
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                  }`}
-                >
-                  {langLabels[l]}
-                </button>
-              ))}
+               <div className="flex items-center rounded-md border border-border overflow-hidden">
+  {supportedLanguages.map((l) => (
+    <button
+      key={l}
+      onClick={() => setLang(l)}
+      className={`px-3 py-1 text-sm font-medium transition ${
+        lang === l
+          ? "bg-primary text-white"
+          : "bg-transparent hover:bg-muted"
+      }`}
+    >
+      {langLabels[l]}
+    </button>
+  ))}
             </div>
             <Link
               to="/offers"
