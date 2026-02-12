@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation, Navigate, useNavigate } from 'react-router-dom';
-import { ClipboardList, UtensilsCrossed, Settings, ChefHat } from 'lucide-react';
+import { UtensilsCrossed, Settings, ChefHat } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/i18n/I18nProvider';
 import { cn } from '@/lib/utils';
@@ -32,7 +32,6 @@ const AdminLayout = () => {
   }, [user, navigate]);
 
   const navItems = [
-    { to: '/admin/orders', label: t('admin.orders'), icon: ClipboardList },
     { to: '/admin/menu', label: t('admin.menu'), icon: ChefHat },
     { to: '/admin/settings', label: t('admin.settings'), icon: Settings },
   ];
@@ -43,7 +42,7 @@ const AdminLayout = () => {
   return (
     <div className="flex min-h-screen bg-background">
       <aside className="sticky top-0 hidden h-screen w-60 flex-col border-e border-border bg-card p-4 md:flex">
-        <Link to="/admin/orders" className="mb-8 flex items-center gap-2 px-2">
+        <Link to="/admin/menu" className="mb-8 flex items-center gap-2 px-2">
           <UtensilsCrossed className="h-6 w-6 text-primary" />
           <span className="font-display text-lg font-bold">{t('app.admin')}</span>
         </Link>

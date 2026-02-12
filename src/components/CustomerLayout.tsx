@@ -79,7 +79,7 @@ const CustomerLayout = () => {
             </Link>
             {isAdmin && (
               <Link
-                to="/admin/orders"
+                to="/admin/menu"
                 className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
                 {t("app.admin")}

@@ -11,11 +11,7 @@ import AdminLayout from "@/components/AdminLayout";
 import MenuPage from "@/pages/MenuPage";
 import ItemDetailPage from "@/pages/ItemDetailPage";
 import CartPage from "@/pages/CartPage";
-import CheckoutPage from "@/pages/CheckoutPage";
-import OrderStatusPage from "@/pages/OrderStatusPage";
 import AuthPage from "@/pages/AuthPage";
-import AdminOrdersPage from "@/pages/admin/AdminOrdersPage";
-import AdminOrderDetailPage from "@/pages/admin/AdminOrderDetailPage";
 import AdminMenuPage from "@/pages/admin/AdminMenuPage";
 import AdminSettingsPage from "@/pages/admin/AdminSettingsPage";
 import OffersPage from "@/pages/OffersPage";
@@ -39,13 +35,9 @@ const App = () => (
                   <Route path="/offers" element={<OffersPage />} />
                   <Route path="/item/:id" element={<ItemDetailPage />} />
                   <Route path="/cart" element={<CartPage />} />
-                  <Route path="/checkout" element={<CheckoutPage />} />
-                  <Route path="/order/:id" element={<OrderStatusPage />} />
                 </Route>
                 <Route path="/auth" element={<AuthPage />} />
                 <Route element={<AdminLayout />}>
-                  <Route path="/admin/orders" element={<AdminOrdersPage />} />
-                  <Route path="/admin/orders/:id" element={<AdminOrderDetailPage />} />
                   <Route path="/admin/menu" element={<AdminMenuPage />} />
                   <Route path="/admin/settings" element={<AdminSettingsPage />} />
                 </Route>

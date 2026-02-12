@@ -1,8 +1,5 @@
 project_id = "kbjxdrbscmiqykurvoep"
 
-[functions.assign-admin]
-verify_jwt = false
-
 [functions.whatsapp-notify]
 verify_jwt = false
 
