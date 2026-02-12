@@ -295,6 +295,9 @@ export type Database = {
           delivery_fee: number | null
           delivery_radius_km: number | null
           description: string | null
+          hero_image_url: string | null
+          hero_subtitle: string | null
+          hero_title: string | null
           id: string
           is_open: boolean | null
           logo_url: string | null
@@ -310,6 +313,9 @@ export type Database = {
           delivery_fee?: number | null
           delivery_radius_km?: number | null
           description?: string | null
+          hero_image_url?: string | null
+          hero_subtitle?: string | null
+          hero_title?: string | null
           id?: string
           is_open?: boolean | null
           logo_url?: string | null
@@ -325,6 +331,9 @@ export type Database = {
           delivery_fee?: number | null
           delivery_radius_km?: number | null
           description?: string | null
+          hero_image_url?: string | null
+          hero_subtitle?: string | null
+          hero_title?: string | null
           id?: string
           is_open?: boolean | null
           logo_url?: string | null
