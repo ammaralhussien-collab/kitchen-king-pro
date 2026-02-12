@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.translate-all-menu]
 verify_jwt = false
+
+[functions.create-chat-order]
+verify_jwt = false
