@@ -30,11 +30,9 @@ const CustomerLayout = () => {
             {logoUrl ? (
               <img src={logoUrl} alt={restaurantName} className="h-8 w-8 rounded-full object-cover" />
             ) : (
-              <>
-                <UtensilsCrossed className="h-6 w-6 text-primary" />
-                <span className="font-display text-xl font-bold text-foreground">{restaurantName}</span>
-              </>
+              <UtensilsCrossed className="h-6 w-6 text-primary" />
             )}
+            <span className="font-display text-xl font-bold text-foreground">{restaurantName}</span>
           </Link>
           <div className="flex items-center gap-3">
             <Link
