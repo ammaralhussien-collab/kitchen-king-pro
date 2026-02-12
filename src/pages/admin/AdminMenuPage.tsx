@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, GripVertical, Upload, ImageIcon } from 'lucide-react';
+import { Plus, Pencil, Trash2, GripVertical, Upload, ImageIcon, Languages } from 'lucide-react';
 
 interface Category {
   id: string;
@@ -54,6 +54,9 @@ const AdminMenuPage = () => {
   const [itemDialogOpen, setItemDialogOpen] = useState(false);
   const [catDialogOpen, setCatDialogOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [translatingItem, setTranslatingItem] = useState<string | null>(null);
+  const [translatingCategory, setTranslatingCategory] = useState<string | null>(null);
+  const [translatingAll, setTranslatingAll] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { t, lang, formatCurrency } = useI18n();
 
@@ -159,12 +162,59 @@ const AdminMenuPage = () => {
     setItems(prev => prev.map(i => i.id === item.id ? { ...i, is_available: !i.is_available } : i));
   };
 
+  const translateItem = async (itemId: string) => {
+    setTranslatingItem(itemId);
+    try {
+      const { data, error } = await supabase.functions.invoke('translate-menu-item', { body: { item_id: itemId } });
+      if (error) throw error;
+      if (data?.skipped) toast.info(t('admin.translateSkipped'));
+      else toast.success(t('admin.translateSuccess'));
+      fetchData();
+    } catch (err: any) {
+      toast.error(t('admin.translateError'));
+    } finally {
+      setTranslatingItem(null);
+    }
+  };
+
+  const translateCategory = async (catId: string) => {
+    setTranslatingCategory(catId);
+    try {
+      const { data, error } = await supabase.functions.invoke('translate-menu-category', { body: { category_id: catId } });
+      if (error) throw error;
+      if (data?.skipped) toast.info(t('admin.translateSkipped'));
+      else toast.success(t('admin.translateSuccess'));
+      fetchData();
+    } catch (err: any) {
+      toast.error(t('admin.translateError'));
+    } finally {
+      setTranslatingCategory(null);
+    }
+  };
+
+  const translateAll = async () => {
+    setTranslatingAll(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('translate-all-menu', { body: {} });
+      if (error) throw error;
+      toast.success(t('admin.translateAllSuccess').replace('{categories}', String(data?.categoriesTranslated || 0)).replace('{items}', String(data?.itemsTranslated || 0)));
+      fetchData();
+    } catch (err: any) {
+      toast.error(t('admin.translateError'));
+    } finally {
+      setTranslatingAll(false);
+    }
+  };
+
   const filteredItems = activeCategory ? items.filter(i => i.category_id === activeCategory) : [];
 
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="font-display text-2xl font-bold">{t('admin.menuManagement')}</h1>
+        <Button size="sm" variant="outline" onClick={translateAll} disabled={translatingAll}>
+          <Languages className="me-1 h-3 w-3" /> {translatingAll ? t('admin.translating') : t('admin.translateAll')}
+        </Button>
       </div>
 
       {/* Categories */}
@@ -202,6 +252,7 @@ const AdminMenuPage = () => {
                 {getLocalizedName(cat, lang)}
               </button>
               <button onClick={() => { setEditingCategory(cat); setCatDialogOpen(true); }} className="text-muted-foreground hover:text-foreground"><Pencil className="h-3 w-3" /></button>
+              <button onClick={() => translateCategory(cat.id)} disabled={translatingCategory === cat.id} className="text-muted-foreground hover:text-primary"><Languages className="h-3 w-3" /></button>
               <button onClick={() => deleteCategory(cat.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-3 w-3" /></button>
             </div>
           ))}
@@ -315,6 +366,7 @@ const AdminMenuPage = () => {
             </div>
             <div className="flex items-center gap-2">
               <Switch checked={item.is_available} onCheckedChange={() => toggleAvailability(item)} />
+              <button onClick={() => translateItem(item.id)} disabled={translatingItem === item.id} className="p-1 text-muted-foreground hover:text-primary"><Languages className="h-4 w-4" /></button>
               <button onClick={() => { setEditingItem(item); setItemDialogOpen(true); }} className="p-1 text-muted-foreground hover:text-foreground"><Pencil className="h-4 w-4" /></button>
               <button onClick={() => deleteItem(item.id)} className="p-1 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
             </div>

@@ -200,6 +200,13 @@ const de = {
   'admin.descDE': 'Beschreibung (Deutsch)',
   'admin.descEN': 'Beschreibung (Englisch)',
   'admin.descAR': 'Beschreibung (Arabisch)',
+  'admin.translate': 'Übersetzen (DE+AR)',
+  'admin.translateAll': 'Alles übersetzen',
+  'admin.translating': 'Übersetze…',
+  'admin.translateSuccess': 'Übersetzung erfolgreich!',
+  'admin.translateError': 'Übersetzungsfehler',
+  'admin.translateSkipped': 'Bereits übersetzt',
+  'admin.translateAllSuccess': 'Übersetzungen: {categories} Kategorien, {items} Artikel',
 };
 
 const en: Record<TranslationKey, string> = {
@@ -385,6 +392,13 @@ const en: Record<TranslationKey, string> = {
   'admin.descDE': 'Description (German)',
   'admin.descEN': 'Description (English)',
   'admin.descAR': 'Description (Arabic)',
+  'admin.translate': 'Translate (DE+AR)',
+  'admin.translateAll': 'Translate All',
+  'admin.translating': 'Translating…',
+  'admin.translateSuccess': 'Translation successful!',
+  'admin.translateError': 'Translation error',
+  'admin.translateSkipped': 'Already translated',
+  'admin.translateAllSuccess': 'Translated: {categories} categories, {items} items',
 };
 
 const ar: Record<TranslationKey, string> = {
@@ -570,6 +584,13 @@ const ar: Record<TranslationKey, string> = {
   'admin.descDE': 'الوصف (ألماني)',
   'admin.descEN': 'الوصف (إنجليزي)',
   'admin.descAR': 'الوصف (عربي)',
+  'admin.translate': 'ترجمة (DE+AR)',
+  'admin.translateAll': 'ترجمة الكل',
+  'admin.translating': 'جاري الترجمة…',
+  'admin.translateSuccess': 'تمت الترجمة بنجاح!',
+  'admin.translateError': 'خطأ في الترجمة',
+  'admin.translateSkipped': 'مترجم بالفعل',
+  'admin.translateAllSuccess': 'تمت الترجمة: {categories} فئات، {items} أصناف',
 };
 
 export const translations: Record<Language, Record<TranslationKey, string>> = { de, en, ar };
