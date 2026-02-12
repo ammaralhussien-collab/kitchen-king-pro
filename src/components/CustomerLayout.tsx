@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { ShoppingCart, UtensilsCrossed, User } from 'lucide-react';
+import { ShoppingCart, UtensilsCrossed, User, Tag } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -18,6 +18,13 @@ const CustomerLayout = () => {
             <span className="font-display text-xl font-bold text-foreground">Bella Cucina</span>
           </Link>
           <div className="flex items-center gap-3">
+            <Link
+              to="/offers"
+              className="flex items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <Tag className="h-4 w-4" />
+              Offers
+            </Link>
             {isAdmin && (
               <Link
                 to="/admin/orders"
