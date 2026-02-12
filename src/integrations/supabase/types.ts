@@ -210,6 +210,7 @@ export type Database = {
           payment_method: Database["public"]["Enums"]["payment_method"]
           restaurant_id: string
           scheduled_time: string | null
+          source: string
           status: Database["public"]["Enums"]["order_status"]
           subtotal: number
           total: number
@@ -228,6 +229,7 @@ export type Database = {
           payment_method?: Database["public"]["Enums"]["payment_method"]
           restaurant_id: string
           scheduled_time?: string | null
+          source?: string
           status?: Database["public"]["Enums"]["order_status"]
           subtotal?: number
           total?: number
@@ -246,6 +248,7 @@ export type Database = {
           payment_method?: Database["public"]["Enums"]["payment_method"]
           restaurant_id?: string
           scheduled_time?: string | null
+          source?: string
           status?: Database["public"]["Enums"]["order_status"]
           subtotal?: number
           total?: number

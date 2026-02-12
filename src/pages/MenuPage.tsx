@@ -6,6 +6,7 @@ import { Plus, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import heroImgFallback from '@/assets/hero-restaurant.jpg';
+import ChatOrderButton from '@/components/ChatOrderButton';
 
 interface Category {
   id: string;
@@ -159,6 +160,7 @@ const MenuPage = () => {
           ))}
         </div>
       </div>
+      <ChatOrderButton />
     </div>
   );
 };

@@ -6,6 +6,7 @@ import { Plus, Clock, Tag } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
+import ChatOrderButton from '@/components/ChatOrderButton';
 
 interface OfferItem {
   id: string;
@@ -125,6 +126,7 @@ const OffersPage = () => {
           ))}
         </div>
       </div>
+      <ChatOrderButton />
     </div>
   );
 };
