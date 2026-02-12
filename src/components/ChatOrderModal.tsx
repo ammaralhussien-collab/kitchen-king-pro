@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useCart } from '@/contexts/CartContext';
 import { X, Send, Truck, Store, Search, Plus, Minus, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,9 +14,6 @@ interface MenuItem {
   offer_price: number | null; offer_badge: string | null;
 }
 interface Addon { id: string; name: string; price: number; item_id: string }
-interface SelectedItem {
-  item: MenuItem; quantity: number; addons: Addon[]; notes: string;
-}
 
 type Step = 'order_type' | 'contact' | 'address' | 'items' | 'item_detail' | 'summary' | 'confirmed';
 
@@ -28,6 +26,7 @@ const getPrice = (item: MenuItem) => (item.is_offer && item.offer_price) ? item.
 
 export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () => void }) => {
   const navigate = useNavigate();
+  const { items: cartItems, addItem, removeItem, subtotal, itemCount } = useCart();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [step, setStep] = useState<Step>('order_type');
@@ -45,7 +44,6 @@ export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () =
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [driverNotes, setDriverNotes] = useState('');
-  const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
@@ -86,7 +84,7 @@ export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () =
     setMessages([]);
     setStep('order_type');
     setOrderType(''); setName(''); setPhone(''); setAddress(''); setDriverNotes('');
-    setSelectedItems([]); setSearchQuery(''); setOrderId(null);
+    setSearchQuery(''); setOrderId(null);
     setTimeout(() => addMsg('bot', 'مرحباً! 👋 كيف تحب تستلم طلبك؟'), 300);
   }, [open, addMsg]);
 
@@ -133,30 +131,34 @@ export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () =
     if (!editingItem) return;
     const itemAddons = allAddons
       .filter(a => a.item_id === editingItem.id && editAddons.has(a.id));
-    setSelectedItems(prev => [...prev, {
-      item: editingItem, quantity: editQty, addons: itemAddons, notes: editNotes,
-    }]);
+    
+    // Use the shared cart context
+    addItem({
+      id: crypto.randomUUID(),
+      itemId: editingItem.id,
+      name: editingItem.name,
+      price: getPrice(editingItem),
+      quantity: editQty,
+      addons: itemAddons.map(a => ({ id: a.id, name: a.name, price: a.price })),
+      notes: editNotes,
+      image_url: editingItem.image_url ?? undefined,
+    });
+
     const addonText = itemAddons.length > 0 ? ` + ${itemAddons.map(a => a.name).join(', ')}` : '';
     addMsg('user', `✅ ${editQty}x ${editingItem.name}${addonText}`);
     setEditingItem(null);
     setStep('items');
   };
 
-  const removeSelectedItem = (index: number) => {
-    setSelectedItems(prev => prev.filter((_, i) => i !== index));
+  const handleRemoveCartItem = (cartItemId: string) => {
+    removeItem(cartItemId);
   };
 
   const goToSummary = () => {
-    if (selectedItems.length === 0) return;
+    if (cartItems.length === 0) return;
     setStep('summary');
     addMsg('bot', 'هذا ملخص طلبك 👇');
   };
-
-  const computeSubtotal = () =>
-    selectedItems.reduce((sum, si) => {
-      const addonTotal = si.addons.reduce((s, a) => s + a.price, 0);
-      return sum + (getPrice(si.item) + addonTotal) * si.quantity;
-    }, 0);
 
   const handleConfirm = async () => {
     setLoading(true);
@@ -168,11 +170,11 @@ export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () =
           customer_phone: phone.trim(),
           delivery_address: orderType === 'delivery' ? address.trim() : undefined,
           notes: driverNotes || undefined,
-          items: selectedItems.map(si => ({
-            item_id: si.item.id,
-            quantity: si.quantity,
-            addon_ids: si.addons.map(a => a.id),
-            notes: si.notes,
+          items: cartItems.map(ci => ({
+            item_id: ci.itemId,
+            quantity: ci.quantity,
+            addon_ids: ci.addons.map(a => a.id),
+            notes: ci.notes,
           })),
         },
       });
@@ -316,21 +318,21 @@ export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () =
                   ))}
                 </div>
 
-                {/* Selected items summary */}
-                {selectedItems.length > 0 && (
+                {/* Cart items summary - reads from shared cart */}
+                {cartItems.length > 0 && (
                   <div className="space-y-1 rounded-lg border border-primary/20 bg-primary/5 p-2">
-                    <span className="text-xs font-semibold text-primary">الأصناف المختارة ({selectedItems.length})</span>
-                    {selectedItems.map((si, i) => (
-                      <div key={i} className="flex items-center justify-between text-xs">
-                        <span>{si.quantity}x {si.item.name}</span>
-                        <button onClick={() => removeSelectedItem(i)} className="text-destructive hover:underline text-[10px]">حذف</button>
+                    <span className="text-xs font-semibold text-primary">الأصناف المختارة ({itemCount})</span>
+                    {cartItems.map(ci => (
+                      <div key={ci.id} className="flex items-center justify-between text-xs">
+                        <span>{ci.quantity}x {ci.name}</span>
+                        <button onClick={() => handleRemoveCartItem(ci.id)} className="text-destructive hover:underline text-[10px]">حذف</button>
                       </div>
                     ))}
                   </div>
                 )}
 
-                <Button onClick={goToSummary} className="w-full" size="sm" disabled={selectedItems.length === 0}>
-                  <Check className="mr-1 h-3 w-3" /> مراجعة الطلب ({selectedItems.length})
+                <Button onClick={goToSummary} className="w-full" size="sm" disabled={cartItems.length === 0}>
+                  <Check className="mr-1 h-3 w-3" /> مراجعة الطلب ({itemCount})
                 </Button>
               </div>
             )}
@@ -392,14 +394,14 @@ export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () =
             {step === 'summary' && (
               <div className="space-y-2 rounded-lg border border-border p-3">
                 <span className="text-xs font-bold">ملخص الطلب</span>
-                {selectedItems.map((si, i) => {
-                  const addonTotal = si.addons.reduce((s, a) => s + a.price, 0);
-                  const line = (getPrice(si.item) + addonTotal) * si.quantity;
+                {cartItems.map(ci => {
+                  const addonTotal = ci.addons.reduce((s, a) => s + a.price, 0);
+                  const line = (ci.price + addonTotal) * ci.quantity;
                   return (
-                    <div key={i} className="flex justify-between text-xs border-b border-border pb-1">
+                    <div key={ci.id} className="flex justify-between text-xs border-b border-border pb-1">
                       <div>
-                        <span>{si.quantity}x {si.item.name}</span>
-                        {si.addons.length > 0 && <span className="text-muted-foreground"> + {si.addons.map(a => a.name).join(', ')}</span>}
+                        <span>{ci.quantity}x {ci.name}</span>
+                        {ci.addons.length > 0 && <span className="text-muted-foreground"> + {ci.addons.map(a => a.name).join(', ')}</span>}
                       </div>
                       <span className="font-semibold">${line.toFixed(2)}</span>
                     </div>
@@ -407,7 +409,7 @@ export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () =
                 })}
                 <div className="flex justify-between text-xs">
                   <span className="text-muted-foreground">المجموع الفرعي</span>
-                  <span>${computeSubtotal().toFixed(2)}</span>
+                  <span>${subtotal.toFixed(2)}</span>
                 </div>
                 {orderType === 'delivery' && (
                   <div className="flex justify-between text-xs">
@@ -417,7 +419,7 @@ export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () =
                 )}
                 <div className="flex justify-between text-sm font-bold border-t border-border pt-1">
                   <span>الإجمالي</span>
-                  <span className="text-primary">${(computeSubtotal() + (orderType === 'delivery' ? deliveryFee : 0)).toFixed(2)}</span>
+                  <span className="text-primary">${(subtotal + (orderType === 'delivery' ? deliveryFee : 0)).toFixed(2)}</span>
                 </div>
                 <div className="flex gap-2 pt-1">
                   <Button variant="outline" size="sm" className="flex-1" onClick={() => setStep('items')}>تعديل</Button>
