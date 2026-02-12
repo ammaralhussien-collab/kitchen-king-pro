@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useI18n } from '@/i18n/I18nProvider';
 import StatusBadge from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { Check, Clock, MessageCircle } from 'lucide-react';
@@ -43,6 +44,7 @@ interface RestaurantInfo {
 
 const OrderStatusPage = () => {
   const { id } = useParams<{ id: string }>();
+  const { t, formatCurrency } = useI18n();
   const [order, setOrder] = useState<Order | null>(null);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [restaurant, setRestaurant] = useState<RestaurantInfo | null>(null);
@@ -56,7 +58,6 @@ const OrderStatusPage = () => {
       ]);
       if (orderRes.data) {
         setOrder(orderRes.data as any);
-        // Fetch restaurant info
         const { data: rest } = await supabase.from('restaurants').select('name, phone').eq('id', (orderRes.data as any).restaurant_id).single();
         if (rest) setRestaurant(rest);
       }
@@ -74,7 +75,7 @@ const OrderStatusPage = () => {
     return () => { supabase.removeChannel(channel); };
   }, [id]);
 
-  if (!order) return <div className="flex h-96 items-center justify-center text-muted-foreground">Loading order...</div>;
+  if (!order) return <div className="flex h-96 items-center justify-center text-muted-foreground">{t('app.loading')}</div>;
 
   const steps = order.order_type === 'delivery' ? statusSteps : pickupSteps;
   const currentIdx = steps.indexOf(order.status);
@@ -83,8 +84,8 @@ const OrderStatusPage = () => {
   return (
     <div className="container max-w-2xl py-8">
       <div className="text-center">
-        <h1 className="font-display text-2xl font-bold">Order Placed! 🎉</h1>
-        <p className="mt-1 text-muted-foreground">Thank you, {order.customer_name}</p>
+        <h1 className="font-display text-2xl font-bold">{t('order.placed')}</h1>
+        <p className="mt-1 text-muted-foreground">{t('order.thankYou')}, {order.customer_name}</p>
         <div className="mt-3">
           <StatusBadge status={order.status} />
         </div>
@@ -124,18 +125,18 @@ const OrderStatusPage = () => {
 
       {/* Order details */}
       <div className="mt-8 rounded-xl border border-border bg-card p-4">
-        <h3 className="font-display font-semibold">Order Details</h3>
+        <h3 className="font-display font-semibold">{t('order.details')}</h3>
         <div className="mt-3 space-y-2">
           {orderItems.map(item => (
             <div key={item.id} className="flex justify-between text-sm">
               <span>{item.quantity}x {item.item_name}</span>
-              <span className="text-muted-foreground">${item.total.toFixed(2)}</span>
+              <span className="text-muted-foreground">{formatCurrency(item.total)}</span>
             </div>
           ))}
         </div>
         <div className="mt-3 flex justify-between border-t border-border pt-3 font-display font-bold">
-          <span>Total</span>
-          <span className="text-primary">${order.total.toFixed(2)}</span>
+          <span>{t('cart.total')}</span>
+          <span className="text-primary">{formatCurrency(order.total)}</span>
         </div>
       </div>
 
@@ -171,14 +172,14 @@ const OrderStatusPage = () => {
             }}
           >
             <MessageCircle className="h-4 w-4" />
-            Open WhatsApp
+            {t('order.openWhatsApp')}
           </Button>
         </div>
       )}
 
       <div className="mt-4 flex items-center justify-center gap-1 text-xs text-muted-foreground">
         <Clock className="h-3 w-3" />
-        Order placed {new Date(order.created_at).toLocaleString()}
+        {t('order.orderPlacedAt')} {new Date(order.created_at).toLocaleString()}
       </div>
     </div>
   );

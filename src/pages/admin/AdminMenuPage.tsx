@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useI18n } from '@/i18n/I18nProvider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -44,6 +45,7 @@ const AdminMenuPage = () => {
   const [catDialogOpen, setCatDialogOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { t, formatCurrency } = useI18n();
 
   const fetchData = async () => {
     const [catRes, itemRes, restRes] = await Promise.all([
@@ -138,25 +140,25 @@ const AdminMenuPage = () => {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="font-display text-2xl font-bold">Menu Management</h1>
+        <h1 className="font-display text-2xl font-bold">{t('admin.menuManagement')}</h1>
       </div>
 
       {/* Categories */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-display text-lg font-semibold">Categories</h2>
+          <h2 className="font-display text-lg font-semibold">{t('admin.categories')}</h2>
           <Dialog open={catDialogOpen} onOpenChange={setCatDialogOpen}>
             <DialogTrigger asChild>
               <Button size="sm" variant="outline" onClick={() => setEditingCategory({ name: '', is_active: true })}>
-                <Plus className="mr-1 h-3 w-3" /> Add Category
+                <Plus className="me-1 h-3 w-3" /> {t('admin.addCategory')}
               </Button>
             </DialogTrigger>
             <DialogContent>
-              <DialogHeader><DialogTitle>{editingCategory?.id ? 'Edit' : 'New'} Category</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{editingCategory?.id ? t('app.edit') : t('app.add')} Category</DialogTitle></DialogHeader>
               <div className="space-y-3">
                 <div><Label>Name</Label><Input value={editingCategory?.name || ''} onChange={e => setEditingCategory(p => ({ ...p, name: e.target.value }))} /></div>
                 <div><Label>Description</Label><Input value={editingCategory?.description || ''} onChange={e => setEditingCategory(p => ({ ...p, description: e.target.value }))} /></div>
-                <Button onClick={saveCategory} className="w-full">Save</Button>
+                <Button onClick={saveCategory} className="w-full">{t('app.save')}</Button>
               </div>
             </DialogContent>
           </Dialog>
@@ -181,16 +183,16 @@ const AdminMenuPage = () => {
 
       {/* Items */}
       <div className="flex items-center justify-between mb-3">
-        <h2 className="font-display text-lg font-semibold">Items</h2>
+        <h2 className="font-display text-lg font-semibold">{t('admin.items')}</h2>
         <Dialog open={itemDialogOpen} onOpenChange={setItemDialogOpen}>
           <DialogTrigger asChild>
             <Button size="sm" onClick={() => setEditingItem({ name: '', price: 0, is_available: true, category_id: activeCategory || '' })}>
-              <Plus className="mr-1 h-3 w-3" /> Add Item
+              <Plus className="me-1 h-3 w-3" /> {t('admin.addItem')}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg">
-            <DialogHeader><DialogTitle>{editingItem?.id ? 'Edit' : 'New'} Item</DialogTitle></DialogHeader>
-            <div className="space-y-4 max-h-[65vh] overflow-y-auto pr-1">
+            <DialogHeader><DialogTitle>{editingItem?.id ? t('app.edit') : t('app.add')} Item</DialogTitle></DialogHeader>
+            <div className="space-y-4 max-h-[65vh] overflow-y-auto pe-1">
               <div><Label>Name</Label><Input value={editingItem?.name || ''} onChange={e => setEditingItem(p => ({ ...p, name: e.target.value }))} /></div>
               <div><Label>Description</Label><Textarea value={editingItem?.description || ''} onChange={e => setEditingItem(p => ({ ...p, description: e.target.value }))} /></div>
               <div className="grid grid-cols-2 gap-3">
@@ -225,7 +227,7 @@ const AdminMenuPage = () => {
                       onChange={e => { if (e.target.files?.[0]) handleImageUpload(e.target.files[0]); }}
                     />
                     <Button type="button" variant="outline" size="sm" disabled={uploading} onClick={() => fileInputRef.current?.click()}>
-                      {uploading ? 'Uploading…' : <><Upload className="mr-1 h-3 w-3" /> Upload</>}
+                      {uploading ? 'Uploading…' : <><Upload className="me-1 h-3 w-3" /> Upload</>}
                     </Button>
                     {!editingItem?.image_url && (
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -242,7 +244,7 @@ const AdminMenuPage = () => {
               </div>
               <div className="space-y-3 rounded-lg border border-border p-3">
                 <div className="flex items-center justify-between">
-                  <Label>Mark as Offer</Label>
+                  <Label>{t('admin.offer')}</Label>
                   <Switch checked={editingItem?.is_offer ?? false} onCheckedChange={v => setEditingItem(p => ({ ...p, is_offer: v }))} />
                 </div>
                 {editingItem?.is_offer && (
@@ -252,7 +254,7 @@ const AdminMenuPage = () => {
                   </div>
                 )}
               </div>
-              <Button onClick={saveItem} className="w-full">Save</Button>
+              <Button onClick={saveItem} className="w-full">{t('app.save')}</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -269,9 +271,9 @@ const AdminMenuPage = () => {
               <div className="flex items-center gap-2">
                 <span className="font-medium">{item.name}</span>
                 {item.is_offer && (
-                  <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold text-accent-foreground">Offer</span>
+                  <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold text-accent-foreground">{t('admin.offer')}</span>
                 )}
-                <span className="text-sm text-primary font-semibold">${item.price.toFixed(2)}</span>
+                <span className="text-sm text-primary font-semibold">{formatCurrency(item.price)}</span>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -282,7 +284,7 @@ const AdminMenuPage = () => {
           </div>
         ))}
         {filteredItems.length === 0 && (
-          <p className="py-8 text-center text-muted-foreground">No items in this category</p>
+          <p className="py-8 text-center text-muted-foreground">{t('admin.noItems')}</p>
         )}
       </div>
     </div>

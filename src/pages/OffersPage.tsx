@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
+import { useI18n } from '@/i18n/I18nProvider';
 import { Plus, Clock, Tag } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
@@ -25,6 +26,7 @@ interface OfferItem {
 const OffersPage = () => {
   const [items, setItems] = useState<OfferItem[]>([]);
   const { addItem } = useCart();
+  const { t, formatCurrency } = useI18n();
 
   useEffect(() => {
     const fetchOffers = async () => {
@@ -50,17 +52,17 @@ const OffersPage = () => {
       notes: '',
       image_url: item.image_url,
     });
-    toast.success(`${item.name} added to cart`);
+    toast.success(`${item.name} ${t('item.addedToCart')}`);
   };
 
   return (
     <div>
       <div className="container py-8">
-        <h1 className="font-display text-3xl font-bold text-foreground mb-2">Special Offers</h1>
-        <p className="text-muted-foreground mb-6">Don't miss our exclusive deals</p>
+        <h1 className="font-display text-3xl font-bold text-foreground mb-2">{t('offers.title')}</h1>
+        <p className="text-muted-foreground mb-6">{t('offers.subtitle')}</p>
 
         {items.length === 0 && (
-          <p className="py-12 text-center text-muted-foreground">No offers available right now</p>
+          <p className="py-12 text-center text-muted-foreground">{t('offers.empty')}</p>
         )}
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -73,8 +75,8 @@ const OffersPage = () => {
               className="group overflow-hidden rounded-xl border border-border bg-card transition-shadow hover:shadow-lg relative"
             >
               {item.offer_badge && (
-                <Badge className="absolute top-2 left-2 z-10 bg-accent text-accent-foreground">
-                  <Tag className="h-3 w-3 mr-1" />
+                <Badge className="absolute top-2 start-2 z-10 bg-accent text-accent-foreground">
+                  <Tag className="h-3 w-3 me-1" />
                   {item.offer_badge}
                 </Badge>
               )}
@@ -97,11 +99,11 @@ const OffersPage = () => {
                   </div>
                   <div className="shrink-0 text-right">
                     <span className="font-display text-lg font-bold text-primary">
-                      ${(item.offer_price ?? item.price).toFixed(2)}
+                      {formatCurrency(item.offer_price ?? item.price)}
                     </span>
                     {item.offer_price != null && item.offer_price < item.price && (
                       <span className="block text-xs text-muted-foreground line-through">
-                        ${item.price.toFixed(2)}
+                        {formatCurrency(item.price)}
                       </span>
                     )}
                   </div>
@@ -110,15 +112,15 @@ const OffersPage = () => {
                   {item.prep_time_minutes && (
                     <span className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Clock className="h-3 w-3" />
-                      {item.prep_time_minutes} min
+                      {item.prep_time_minutes} {t('app.min')}
                     </span>
                   )}
                   <button
                     onClick={() => quickAdd(item)}
-                    className="ml-auto flex items-center gap-1 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-transform hover:scale-105 active:scale-95"
+                    className="ms-auto flex items-center gap-1 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-transform hover:scale-105 active:scale-95"
                   >
                     <Plus className="h-3 w-3" />
-                    Add
+                    {t('item.add')}
                   </button>
                 </div>
               </div>

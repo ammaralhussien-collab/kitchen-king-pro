@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
+import { useI18n } from '@/i18n/I18nProvider';
 import { X, Send, Truck, Store, Search, Plus, Minus, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +28,7 @@ const getPrice = (item: MenuItem) => (item.is_offer && item.offer_price) ? item.
 export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () => void }) => {
   const navigate = useNavigate();
   const { items: cartItems, addItem, removeItem, subtotal, itemCount } = useCart();
+  const { t, formatCurrency } = useI18n();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [step, setStep] = useState<Step>('order_type');
@@ -85,8 +87,8 @@ export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () =
     setStep('order_type');
     setOrderType(''); setName(''); setPhone(''); setAddress(''); setDriverNotes('');
     setSearchQuery(''); setOrderId(null);
-    setTimeout(() => addMsg('bot', 'مرحباً! 👋 كيف تحب تستلم طلبك؟'), 300);
-  }, [open, addMsg]);
+    setTimeout(() => addMsg('bot', t('chat.hello')), 300);
+  }, [open, addMsg, t]);
 
   // Auto-scroll
   useEffect(() => {
@@ -95,9 +97,9 @@ export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () =
 
   const handleOrderType = (type: 'delivery' | 'pickup') => {
     setOrderType(type);
-    addMsg('user', type === 'delivery' ? '🚗 توصيل' : '🏪 استلام');
+    addMsg('user', type === 'delivery' ? t('chat.deliveryLabel') : t('chat.pickupLabel'));
     setStep('contact');
-    setTimeout(() => addMsg('bot', 'ممتاز! أحتاج اسمك ورقم جوالك'), 400);
+    setTimeout(() => addMsg('bot', t('chat.needContact')), 400);
   };
 
   const handleContact = () => {
@@ -105,10 +107,10 @@ export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () =
     addMsg('user', `${name} — ${phone}`);
     if (orderType === 'delivery') {
       setStep('address');
-      setTimeout(() => addMsg('bot', 'وين نوصل الطلب؟ اكتب العنوان وأي ملاحظات للسائق'), 400);
+      setTimeout(() => addMsg('bot', t('chat.whereDeliver')), 400);
     } else {
       setStep('items');
-      setTimeout(() => addMsg('bot', 'اختر الأصناف اللي تبيها 🍽️'), 400);
+      setTimeout(() => addMsg('bot', t('chat.chooseItems')), 400);
     }
   };
 
@@ -116,7 +118,7 @@ export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () =
     if (!address.trim()) return;
     addMsg('user', address + (driverNotes ? ` (${driverNotes})` : ''));
     setStep('items');
-    setTimeout(() => addMsg('bot', 'اختر الأصناف اللي تبيها 🍽️'), 400);
+    setTimeout(() => addMsg('bot', t('chat.chooseItems')), 400);
   };
 
   const openItemDetail = (item: MenuItem) => {
@@ -132,7 +134,6 @@ export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () =
     const itemAddons = allAddons
       .filter(a => a.item_id === editingItem.id && editAddons.has(a.id));
     
-    // Use the shared cart context
     addItem({
       id: crypto.randomUUID(),
       itemId: editingItem.id,
@@ -157,7 +158,7 @@ export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () =
   const goToSummary = () => {
     if (cartItems.length === 0) return;
     setStep('summary');
-    addMsg('bot', 'هذا ملخص طلبك 👇');
+    addMsg('bot', t('chat.orderSummary'));
   };
 
   const handleConfirm = async () => {
@@ -182,9 +183,9 @@ export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () =
       const data = res.data;
       setOrderId(data.order_id);
       setStep('confirmed');
-      addMsg('bot', `✅ تم تأكيد الطلب! رقم الطلب: #${data.order_id.slice(0, 8).toUpperCase()}`);
+      addMsg('bot', `${t('chat.orderConfirmed')} #${data.order_id.slice(0, 8).toUpperCase()}`);
     } catch {
-      addMsg('bot', '❌ حدث خطأ في إنشاء الطلب، حاول مرة أخرى');
+      addMsg('bot', t('chat.orderError'));
     } finally {
       setLoading(false);
     }
@@ -219,7 +220,7 @@ export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () =
         >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
-            <h3 className="font-display text-lg font-bold">اطلب عبر المحادثة</h3>
+            <h3 className="font-display text-lg font-bold">{t('chat.orderViaChat')}</h3>
             <button onClick={onClose} className="rounded-full p-1 hover:bg-muted"><X className="h-5 w-5" /></button>
           </div>
 
@@ -241,30 +242,30 @@ export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () =
             {step === 'order_type' && (
               <div className="flex gap-2 pt-1">
                 <button onClick={() => handleOrderType('delivery')} className="flex flex-1 items-center justify-center gap-2 rounded-xl border-2 border-border bg-card p-3 text-sm font-medium hover:border-primary transition-colors">
-                  <Truck className="h-4 w-4" /> توصيل
+                  <Truck className="h-4 w-4" /> {t('checkout.delivery')}
                 </button>
                 <button onClick={() => handleOrderType('pickup')} className="flex flex-1 items-center justify-center gap-2 rounded-xl border-2 border-border bg-card p-3 text-sm font-medium hover:border-primary transition-colors">
-                  <Store className="h-4 w-4" /> استلام
+                  <Store className="h-4 w-4" /> {t('checkout.pickup')}
                 </button>
               </div>
             )}
 
             {step === 'contact' && (
               <div className="space-y-2 pt-1">
-                <Input placeholder="الاسم" value={name} onChange={e => setName(e.target.value)} />
-                <Input placeholder="رقم الجوال" type="tel" value={phone} onChange={e => setPhone(e.target.value)} />
+                <Input placeholder={t('chat.name')} value={name} onChange={e => setName(e.target.value)} />
+                <Input placeholder={t('chat.phoneNumber')} type="tel" value={phone} onChange={e => setPhone(e.target.value)} />
                 <Button onClick={handleContact} className="w-full" size="sm" disabled={!name.trim() || !phone.trim()}>
-                  <Send className="mr-1 h-3 w-3" /> متابعة
+                  <Send className="me-1 h-3 w-3" /> {t('chat.continue')}
                 </Button>
               </div>
             )}
 
             {step === 'address' && (
               <div className="space-y-2 pt-1">
-                <Input placeholder="العنوان" value={address} onChange={e => setAddress(e.target.value)} />
-                <Input placeholder="ملاحظات للسائق (اختياري)" value={driverNotes} onChange={e => setDriverNotes(e.target.value)} />
+                <Input placeholder={t('chat.address')} value={address} onChange={e => setAddress(e.target.value)} />
+                <Input placeholder={t('chat.driverNotes')} value={driverNotes} onChange={e => setDriverNotes(e.target.value)} />
                 <Button onClick={handleAddress} className="w-full" size="sm" disabled={!address.trim()}>
-                  <Send className="mr-1 h-3 w-3" /> متابعة
+                  <Send className="me-1 h-3 w-3" /> {t('chat.continue')}
                 </Button>
               </div>
             )}
@@ -273,8 +274,8 @@ export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () =
               <div className="space-y-3 pt-1">
                 {/* Search */}
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input className="pl-9" placeholder="ابحث عن صنف..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+                  <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input className="ps-9" placeholder={t('chat.searchItem')} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
                 </div>
 
                 {/* Category chips */}
@@ -307,9 +308,9 @@ export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () =
                           )}
                         </div>
                         <div className="flex items-center gap-1">
-                          <span className="text-xs font-semibold text-primary">${getPrice(item).toFixed(2)}</span>
+                          <span className="text-xs font-semibold text-primary">{formatCurrency(getPrice(item))}</span>
                           {item.is_offer && item.offer_price && (
-                            <span className="text-[10px] text-muted-foreground line-through">${item.price.toFixed(2)}</span>
+                            <span className="text-[10px] text-muted-foreground line-through">{formatCurrency(item.price)}</span>
                           )}
                         </div>
                       </div>
@@ -318,21 +319,21 @@ export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () =
                   ))}
                 </div>
 
-                {/* Cart items summary - reads from shared cart */}
+                {/* Cart items summary */}
                 {cartItems.length > 0 && (
                   <div className="space-y-1 rounded-lg border border-primary/20 bg-primary/5 p-2">
-                    <span className="text-xs font-semibold text-primary">الأصناف المختارة ({itemCount})</span>
+                    <span className="text-xs font-semibold text-primary">{t('chat.selectedItems')} ({itemCount})</span>
                     {cartItems.map(ci => (
                       <div key={ci.id} className="flex items-center justify-between text-xs">
                         <span>{ci.quantity}x {ci.name}</span>
-                        <button onClick={() => handleRemoveCartItem(ci.id)} className="text-destructive hover:underline text-[10px]">حذف</button>
+                        <button onClick={() => handleRemoveCartItem(ci.id)} className="text-destructive hover:underline text-[10px]">{t('chat.remove')}</button>
                       </div>
                     ))}
                   </div>
                 )}
 
                 <Button onClick={goToSummary} className="w-full" size="sm" disabled={cartItems.length === 0}>
-                  <Check className="mr-1 h-3 w-3" /> مراجعة الطلب ({itemCount})
+                  <Check className="me-1 h-3 w-3" /> {t('chat.reviewOrder')} ({itemCount})
                 </Button>
               </div>
             )}
@@ -347,13 +348,13 @@ export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () =
                   )}
                   <div>
                     <h4 className="font-semibold text-sm">{editingItem.name}</h4>
-                    <span className="text-sm font-bold text-primary">${getPrice(editingItem).toFixed(2)}</span>
+                    <span className="text-sm font-bold text-primary">{formatCurrency(getPrice(editingItem))}</span>
                   </div>
                 </div>
 
                 {/* Quantity */}
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium">الكمية</span>
+                  <span className="text-xs font-medium">{t('chat.quantity')}</span>
                   <div className="flex items-center rounded-md border border-border">
                     <button onClick={() => setEditQty(Math.max(1, editQty - 1))} className="px-2 py-1"><Minus className="h-3 w-3" /></button>
                     <span className="w-8 text-center text-sm font-semibold">{editQty}</span>
@@ -364,7 +365,7 @@ export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () =
                 {/* Addons */}
                 {itemAddonsForEdit.length > 0 && (
                   <div className="space-y-1.5">
-                    <span className="text-xs font-medium">إضافات</span>
+                    <span className="text-xs font-medium">{t('chat.extras')}</span>
                     {itemAddonsForEdit.map(addon => (
                       <label key={addon.id} className="flex items-center justify-between rounded-md border border-border p-2 text-xs cursor-pointer hover:bg-muted/50">
                         <div className="flex items-center gap-2">
@@ -373,19 +374,19 @@ export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () =
                             className="h-3.5 w-3.5 rounded border-border" />
                           <span>{addon.name}</span>
                         </div>
-                        <span className="text-muted-foreground">+${addon.price.toFixed(2)}</span>
+                        <span className="text-muted-foreground">+{formatCurrency(addon.price)}</span>
                       </label>
                     ))}
                   </div>
                 )}
 
                 {/* Notes */}
-                <Input placeholder="ملاحظات خاصة (اختياري)" value={editNotes} onChange={e => setEditNotes(e.target.value)} className="text-xs" />
+                <Input placeholder={t('chat.specialNotes')} value={editNotes} onChange={e => setEditNotes(e.target.value)} className="text-xs" />
 
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="flex-1" onClick={() => { setEditingItem(null); setStep('items'); }}>رجوع</Button>
+                  <Button variant="outline" size="sm" className="flex-1" onClick={() => { setEditingItem(null); setStep('items'); }}>{t('chat.back')}</Button>
                   <Button size="sm" className="flex-1" onClick={confirmItemAdd}>
-                    <Plus className="mr-1 h-3 w-3" /> أضف — ${((getPrice(editingItem) + itemAddonsForEdit.filter(a => editAddons.has(a.id)).reduce((s, a) => s + a.price, 0)) * editQty).toFixed(2)}
+                    <Plus className="me-1 h-3 w-3" /> {t('chat.addItem')} — {formatCurrency((getPrice(editingItem) + itemAddonsForEdit.filter(a => editAddons.has(a.id)).reduce((s, a) => s + a.price, 0)) * editQty)}
                   </Button>
                 </div>
               </div>
@@ -393,7 +394,7 @@ export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () =
 
             {step === 'summary' && (
               <div className="space-y-2 rounded-lg border border-border p-3">
-                <span className="text-xs font-bold">ملخص الطلب</span>
+                <span className="text-xs font-bold">{t('chat.summaryTitle')}</span>
                 {cartItems.map(ci => {
                   const addonTotal = ci.addons.reduce((s, a) => s + a.price, 0);
                   const line = (ci.price + addonTotal) * ci.quantity;
@@ -403,28 +404,28 @@ export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () =
                         <span>{ci.quantity}x {ci.name}</span>
                         {ci.addons.length > 0 && <span className="text-muted-foreground"> + {ci.addons.map(a => a.name).join(', ')}</span>}
                       </div>
-                      <span className="font-semibold">${line.toFixed(2)}</span>
+                      <span className="font-semibold">{formatCurrency(line)}</span>
                     </div>
                   );
                 })}
                 <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">المجموع الفرعي</span>
-                  <span>${subtotal.toFixed(2)}</span>
+                  <span className="text-muted-foreground">{t('chat.subtotal')}</span>
+                  <span>{formatCurrency(subtotal)}</span>
                 </div>
                 {orderType === 'delivery' && (
                   <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">رسوم التوصيل</span>
-                    <span>${deliveryFee.toFixed(2)}</span>
+                    <span className="text-muted-foreground">{t('chat.deliveryFeeLabel')}</span>
+                    <span>{formatCurrency(deliveryFee)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-sm font-bold border-t border-border pt-1">
-                  <span>الإجمالي</span>
-                  <span className="text-primary">${(subtotal + (orderType === 'delivery' ? deliveryFee : 0)).toFixed(2)}</span>
+                  <span>{t('chat.totalLabel')}</span>
+                  <span className="text-primary">{formatCurrency(subtotal + (orderType === 'delivery' ? deliveryFee : 0))}</span>
                 </div>
                 <div className="flex gap-2 pt-1">
-                  <Button variant="outline" size="sm" className="flex-1" onClick={() => setStep('items')}>تعديل</Button>
+                  <Button variant="outline" size="sm" className="flex-1" onClick={() => setStep('items')}>{t('chat.modify')}</Button>
                   <Button size="sm" className="flex-1" onClick={handleConfirm} disabled={loading}>
-                    {loading ? 'جاري...' : '✅ تأكيد الطلب'}
+                    {loading ? t('chat.confirming') : t('chat.confirmOrder')}
                   </Button>
                 </div>
               </div>
@@ -433,7 +434,7 @@ export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () =
             {step === 'confirmed' && orderId && (
               <div className="pt-1">
                 <Button onClick={() => { onClose(); navigate(`/order/${orderId}`); }} className="w-full" size="sm">
-                  تتبع الطلب 📍
+                  {t('order.trackOrder')}
                 </Button>
               </div>
             )}

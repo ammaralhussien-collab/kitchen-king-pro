@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useI18n } from '@/i18n/I18nProvider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,6 +32,7 @@ const AdminSettingsPage = () => {
   const [logoUploading, setLogoUploading] = useState(false);
   const heroFileRef = useRef<HTMLInputElement>(null);
   const logoFileRef = useRef<HTMLInputElement>(null);
+  const { t } = useI18n();
 
   useEffect(() => {
     supabase.from('restaurants').select('*').limit(1).single().then(({ data }) => {
@@ -92,28 +94,28 @@ const AdminSettingsPage = () => {
     }).eq('id', restaurant.id);
     setLoading(false);
     if (error) toast.error(error.message);
-    else toast.success('Settings saved!');
+    else toast.success(t('admin.saveSettings'));
   };
 
-  if (!restaurant) return <div className="py-12 text-center text-muted-foreground">Loading...</div>;
+  if (!restaurant) return <div className="py-12 text-center text-muted-foreground">{t('app.loading')}</div>;
 
   const update = (key: keyof Restaurant, value: any) => setRestaurant(r => r ? { ...r, [key]: value } : r);
 
   return (
     <div className="max-w-xl">
-      <h1 className="font-display text-2xl font-bold mb-6">Restaurant Settings</h1>
+      <h1 className="font-display text-2xl font-bold mb-6">{t('admin.restaurantSettings')}</h1>
 
       <div className="space-y-6">
         <div className="flex items-center justify-between rounded-xl border border-border bg-card p-4">
           <div>
-            <span className="font-medium">Restaurant Open</span>
-            <p className="text-xs text-muted-foreground">Toggle to accept orders</p>
+            <span className="font-medium">{t('admin.restaurantOpen')}</span>
+            <p className="text-xs text-muted-foreground">{t('admin.toggleOrders')}</p>
           </div>
           <Switch checked={restaurant.is_open} onCheckedChange={v => update('is_open', v)} />
         </div>
 
         <div className="space-y-4 rounded-xl border border-border bg-card p-4">
-          <h3 className="font-display font-semibold">Logo</h3>
+          <h3 className="font-display font-semibold">{t('admin.logo')}</h3>
           <div>
             <Label>Restaurant Logo</Label>
             <div className="mt-1 space-y-2">
@@ -125,7 +127,7 @@ const AdminSettingsPage = () => {
               <div className="flex gap-2">
                 <input ref={logoFileRef} type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) handleLogoUpload(e.target.files[0]); }} />
                 <Button type="button" variant="outline" size="sm" disabled={logoUploading} onClick={() => logoFileRef.current?.click()}>
-                  {logoUploading ? 'Uploading…' : <><Upload className="mr-1 h-3 w-3" /> Upload</>}
+                  {logoUploading ? 'Uploading…' : <><Upload className="me-1 h-3 w-3" /> Upload</>}
                 </Button>
               </div>
               <Input value={restaurant.logo_url || ''} onChange={e => update('logo_url', e.target.value)} placeholder="https://..." />
@@ -139,24 +141,24 @@ const AdminSettingsPage = () => {
         </div>
 
         <div className="space-y-4 rounded-xl border border-border bg-card p-4">
-          <h3 className="font-display font-semibold">General</h3>
+          <h3 className="font-display font-semibold">{t('admin.general')}</h3>
           <div><Label>Restaurant Name</Label><Input value={restaurant.name} onChange={e => update('name', e.target.value)} /></div>
           <div><Label>Description</Label><Input value={restaurant.description || ''} onChange={e => update('description', e.target.value)} /></div>
-          <div><Label>Phone</Label><Input value={restaurant.phone || ''} onChange={e => update('phone', e.target.value)} /></div>
-          <div><Label>Address</Label><Input value={restaurant.address || ''} onChange={e => update('address', e.target.value)} /></div>
+          <div><Label>{t('admin.phone')}</Label><Input value={restaurant.phone || ''} onChange={e => update('phone', e.target.value)} /></div>
+          <div><Label>{t('admin.address')}</Label><Input value={restaurant.address || ''} onChange={e => update('address', e.target.value)} /></div>
         </div>
 
         <div className="space-y-4 rounded-xl border border-border bg-card p-4">
-          <h3 className="font-display font-semibold">Delivery</h3>
+          <h3 className="font-display font-semibold">{t('admin.deliverySettings')}</h3>
           <div><Label>Delivery Radius (km)</Label><Input type="number" value={restaurant.delivery_radius_km} onChange={e => update('delivery_radius_km', parseFloat(e.target.value))} /></div>
-          <div><Label>Delivery Fee ($)</Label><Input type="number" step="0.01" value={restaurant.delivery_fee} onChange={e => update('delivery_fee', parseFloat(e.target.value))} /></div>
-          <div><Label>Minimum Order ($)</Label><Input type="number" step="0.01" value={restaurant.minimum_order} onChange={e => update('minimum_order', parseFloat(e.target.value))} /></div>
+          <div><Label>Delivery Fee</Label><Input type="number" step="0.01" value={restaurant.delivery_fee} onChange={e => update('delivery_fee', parseFloat(e.target.value))} /></div>
+          <div><Label>Minimum Order</Label><Input type="number" step="0.01" value={restaurant.minimum_order} onChange={e => update('minimum_order', parseFloat(e.target.value))} /></div>
         </div>
 
         <div className="space-y-4 rounded-xl border border-border bg-card p-4">
-          <h3 className="font-display font-semibold">Hero Section</h3>
-          <div><Label>Hero Title</Label><Input value={restaurant.hero_title || ''} onChange={e => update('hero_title', e.target.value)} placeholder="Our Menu" /></div>
-          <div><Label>Hero Subtitle</Label><Input value={restaurant.hero_subtitle || ''} onChange={e => update('hero_subtitle', e.target.value)} placeholder="Authentic Italian cuisine" /></div>
+          <h3 className="font-display font-semibold">{t('admin.heroSection')}</h3>
+          <div><Label>Hero Title</Label><Input value={restaurant.hero_title || ''} onChange={e => update('hero_title', e.target.value)} placeholder={t('hero.title')} /></div>
+          <div><Label>Hero Subtitle</Label><Input value={restaurant.hero_subtitle || ''} onChange={e => update('hero_subtitle', e.target.value)} placeholder={t('hero.subtitle')} /></div>
           <div>
             <Label>Hero Image</Label>
             <div className="mt-1 space-y-2">
@@ -168,7 +170,7 @@ const AdminSettingsPage = () => {
               <div className="flex gap-2">
                 <input ref={heroFileRef} type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) handleHeroUpload(e.target.files[0]); }} />
                 <Button type="button" variant="outline" size="sm" disabled={heroUploading} onClick={() => heroFileRef.current?.click()}>
-                  {heroUploading ? 'Uploading…' : <><Upload className="mr-1 h-3 w-3" /> Upload</>}
+                  {heroUploading ? 'Uploading…' : <><Upload className="me-1 h-3 w-3" /> Upload</>}
                 </Button>
                 {!restaurant.hero_image_url && (
                   <div className="flex items-center gap-1 text-xs text-muted-foreground"><ImageIcon className="h-3 w-3" /> Or paste URL below</div>
@@ -180,7 +182,7 @@ const AdminSettingsPage = () => {
         </div>
 
         <Button onClick={save} className="w-full" disabled={loading}>
-          {loading ? 'Saving...' : 'Save Settings'}
+          {loading ? t('app.saving') : t('admin.saveSettings')}
         </Button>
       </div>
     </div>

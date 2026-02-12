@@ -1,20 +1,22 @@
 import { Link } from 'react-router-dom';
 import { useCart } from '@/contexts/CartContext';
+import { useI18n } from '@/i18n/I18nProvider';
 import { Minus, Plus, Trash2, ArrowLeft, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const CartPage = () => {
   const { items, removeItem, updateQuantity, subtotal } = useCart();
+  const { t, formatCurrency } = useI18n();
 
   if (items.length === 0) {
     return (
       <div className="container flex flex-col items-center justify-center py-24 text-center">
         <ShoppingBag className="mb-4 h-16 w-16 text-muted-foreground/40" />
-        <h2 className="font-display text-2xl font-bold">Your cart is empty</h2>
-        <p className="mt-2 text-muted-foreground">Add some delicious items from our menu!</p>
+        <h2 className="font-display text-2xl font-bold">{t('cart.empty')}</h2>
+        <p className="mt-2 text-muted-foreground">{t('cart.emptyHint')}</p>
         <Link to="/menu">
-          <Button className="mt-6">Browse Menu</Button>
+          <Button className="mt-6">{t('app.browseMenu')}</Button>
         </Link>
       </div>
     );
@@ -23,9 +25,9 @@ const CartPage = () => {
   return (
     <div className="container max-w-2xl py-6">
       <Link to="/menu" className="mb-4 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-4 w-4" /> Continue Shopping
+        <ArrowLeft className="h-4 w-4" /> {t('app.continueShopping')}
       </Link>
-      <h1 className="font-display text-2xl font-bold">Your Cart</h1>
+      <h1 className="font-display text-2xl font-bold">{t('cart.title')}</h1>
 
       <div className="mt-6 space-y-4">
         <AnimatePresence>
@@ -67,7 +69,7 @@ const CartPage = () => {
                     <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="px-2 py-1"><Plus className="h-3 w-3" /></button>
                   </div>
                   <span className="font-display font-bold text-primary">
-                    ${((item.price + item.addons.reduce((s, a) => s + a.price, 0)) * item.quantity).toFixed(2)}
+                    {formatCurrency((item.price + item.addons.reduce((s, a) => s + a.price, 0)) * item.quantity)}
                   </span>
                 </div>
               </div>
@@ -78,11 +80,11 @@ const CartPage = () => {
 
       <div className="mt-6 rounded-xl border border-border bg-card p-4">
         <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Subtotal</span>
-          <span className="font-semibold">${subtotal.toFixed(2)}</span>
+          <span className="text-muted-foreground">{t('cart.subtotal')}</span>
+          <span className="font-semibold">{formatCurrency(subtotal)}</span>
         </div>
         <Link to="/checkout" className="mt-4 block">
-          <Button className="w-full text-base font-semibold" size="lg">Proceed to Checkout</Button>
+          <Button className="w-full text-base font-semibold" size="lg">{t('cart.checkout')}</Button>
         </Link>
       </div>
     </div>

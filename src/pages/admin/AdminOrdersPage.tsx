@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useI18n } from '@/i18n/I18nProvider';
 import StatusBadge from '@/components/StatusBadge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Bell } from 'lucide-react';
@@ -21,6 +22,7 @@ const AdminOrdersPage = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [filter, setFilter] = useState('all');
   const [newOrderAlert, setNewOrderAlert] = useState(false);
+  const { t, formatCurrency } = useI18n();
 
   const fetchOrders = async () => {
     let query = supabase.from('orders').select('*').order('created_at', { ascending: false });
@@ -39,7 +41,6 @@ const AdminOrdersPage = () => {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, (payload) => {
         setOrders(prev => [payload.new as any, ...prev]);
         setNewOrderAlert(true);
-        // Play sound
         try {
           const audio = new Audio('data:audio/wav;base64,UklGRl9vT19teleGFyaXhfZ2VuZXJhdGVk');
           audio.play().catch(() => {});
@@ -58,10 +59,10 @@ const AdminOrdersPage = () => {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h1 className="font-display text-2xl font-bold">Orders</h1>
+          <h1 className="font-display text-2xl font-bold">{t('admin.orders')}</h1>
           {newOrderAlert && (
             <span className="flex items-center gap-1 animate-pulse-soft rounded-full bg-primary px-3 py-1 text-xs font-bold text-primary-foreground">
-              <Bell className="h-3 w-3" /> New Order!
+              <Bell className="h-3 w-3" /> {t('admin.newOrder')}
             </span>
           )}
         </div>
@@ -71,7 +72,7 @@ const AdminOrdersPage = () => {
           </SelectTrigger>
           <SelectContent>
             {statuses.map(s => (
-              <SelectItem key={s} value={s}>{s === 'all' ? 'All Orders' : s.replace('_', ' ')}</SelectItem>
+              <SelectItem key={s} value={s}>{s === 'all' ? t('admin.allOrders') : s.replace('_', ' ')}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -95,11 +96,11 @@ const AdminOrdersPage = () => {
                 <span>{new Date(order.created_at).toLocaleTimeString()}</span>
               </div>
             </div>
-            <span className="font-display font-bold text-primary">${order.total.toFixed(2)}</span>
+            <span className="font-display font-bold text-primary">{formatCurrency(order.total)}</span>
           </Link>
         ))}
         {orders.length === 0 && (
-          <p className="py-12 text-center text-muted-foreground">No orders found</p>
+          <p className="py-12 text-center text-muted-foreground">{t('admin.noOrders')}</p>
         )}
       </div>
     </div>
