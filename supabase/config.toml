@@ -5,3 +5,12 @@ verify_jwt = false
 
 [functions.whatsapp-notify]
 verify_jwt = false
+
+[functions.translate-menu-item]
+verify_jwt = false
+
+[functions.translate-menu-category]
+verify_jwt = false
+
+[functions.translate-all-menu]
+verify_jwt = false
