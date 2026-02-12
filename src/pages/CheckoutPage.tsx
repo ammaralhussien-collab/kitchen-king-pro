@@ -63,25 +63,29 @@ const CheckoutPage = () => {
 
     setLoading(true);
     try {
-      const { data: order, error: orderErr } = await supabase
-        .from('orders')
-        .insert({
-          restaurant_id: restaurantId,
-          order_type: form.orderType,
-          payment_method: form.paymentMethod,
-          customer_name: form.name.trim(),
-          customer_phone: form.phone.trim(),
-          delivery_address: form.orderType === 'delivery' ? form.address.trim() : null,
-          scheduled_time: form.scheduledTime || null,
-          subtotal,
-          delivery_fee: form.orderType === 'delivery' ? deliveryFee : 0,
-          total,
-          notes: form.notes || null,
-        })
-        .select('id')
-        .single();
+       const { data: { session } } = await supabase.auth.getSession();
+       const userId = session?.user?.id || '00000000-0000-0000-0000-000000000000';
+       
+       const { data: order, error: orderErr } = await supabase
+         .from('orders')
+         .insert({
+           restaurant_id: restaurantId,
+           user_id: userId,
+           order_type: form.orderType,
+           payment_method: form.paymentMethod,
+           customer_name: form.name.trim(),
+           customer_phone: form.phone.trim(),
+           delivery_address: form.orderType === 'delivery' ? form.address.trim() : null,
+           scheduled_time: form.scheduledTime || null,
+           subtotal,
+           delivery_fee: form.orderType === 'delivery' ? deliveryFee : 0,
+           total,
+           notes: form.notes || null,
+         })
+         .select('id')
+         .single();
 
-      if (orderErr) throw orderErr;
+       if (orderErr) throw orderErr;
 
       const orderItems = items.map(cartItem => ({
         order_id: order.id,
