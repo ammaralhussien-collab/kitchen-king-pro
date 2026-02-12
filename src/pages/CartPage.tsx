@@ -83,9 +83,7 @@ const CartPage = () => {
           <span className="text-muted-foreground">{t('cart.subtotal')}</span>
           <span className="font-semibold">{formatCurrency(subtotal)}</span>
         </div>
-        <Link to="/checkout" className="mt-4 block">
-          <Button className="w-full text-base font-semibold" size="lg">{t('cart.checkout')}</Button>
-        </Link>
+        <p className="mt-3 text-center text-sm text-muted-foreground">Online ordering coming soon!</p>
       </div>
     </div>
   );
