@@ -22,6 +22,9 @@ interface Item {
   image_url: string | null;
   is_available: boolean;
   prep_time_minutes: number | null;
+  is_offer: boolean | null;
+  offer_price: number | null;
+  offer_badge: string | null;
 }
 
 interface HeroData {
@@ -54,12 +57,14 @@ const MenuPage = () => {
     fetchData();
   }, []);
 
+  const getEffectivePrice = (item: Item) => (item.is_offer && item.offer_price) ? item.offer_price : item.price;
+
   const quickAdd = (item: Item) => {
     addItem({
       id: crypto.randomUUID(),
       itemId: item.id,
       name: item.name,
-      price: item.price,
+      price: getEffectivePrice(item),
       quantity: 1,
       addons: [],
       notes: '',
@@ -127,7 +132,12 @@ const MenuPage = () => {
                     </Link>
                     <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{item.description}</p>
                   </div>
-                  <span className="shrink-0 font-display text-lg font-bold text-primary">${item.price.toFixed(2)}</span>
+                  <div className="shrink-0 text-right">
+                    <span className="font-display text-lg font-bold text-primary">${getEffectivePrice(item).toFixed(2)}</span>
+                    {item.is_offer && item.offer_price && (
+                      <span className="ml-1 text-xs text-muted-foreground line-through">${item.price.toFixed(2)}</span>
+                    )}
+                  </div>
                 </div>
                 <div className="mt-3 flex items-center justify-between">
                   {item.prep_time_minutes && (

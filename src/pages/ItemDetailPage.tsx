@@ -15,6 +15,8 @@ interface Item {
   price: number;
   image_url: string | null;
   prep_time_minutes: number | null;
+  is_offer: boolean | null;
+  offer_price: number | null;
 }
 
 interface Addon {
@@ -59,14 +61,15 @@ const ItemDetailPage = () => {
 
   const selectedAddonsList = addons.filter(a => selectedAddons.has(a.id));
   const addonsTotal = selectedAddonsList.reduce((s, a) => s + a.price, 0);
-  const totalPrice = (item.price + addonsTotal) * quantity;
+  const effectivePrice = (item.is_offer && item.offer_price) ? item.offer_price : item.price;
+  const totalPrice = (effectivePrice + addonsTotal) * quantity;
 
   const handleAdd = () => {
     addItem({
       id: crypto.randomUUID(),
       itemId: item.id,
       name: item.name,
-      price: item.price,
+      price: effectivePrice,
       quantity,
       addons: selectedAddonsList.map(a => ({ id: a.id, name: a.name, price: a.price })),
       notes,
@@ -93,7 +96,12 @@ const ItemDetailPage = () => {
       <div className="mt-6">
         <div className="flex items-start justify-between gap-4">
           <h1 className="font-display text-2xl font-bold">{item.name}</h1>
-          <span className="font-display text-2xl font-bold text-primary">${item.price.toFixed(2)}</span>
+          <div className="text-right">
+            <span className="font-display text-2xl font-bold text-primary">${effectivePrice.toFixed(2)}</span>
+            {item.is_offer && item.offer_price && (
+              <span className="ml-2 text-sm text-muted-foreground line-through">${item.price.toFixed(2)}</span>
+            )}
+          </div>
         </div>
         {item.prep_time_minutes && (
           <span className="mt-2 inline-flex items-center gap-1 text-sm text-muted-foreground">

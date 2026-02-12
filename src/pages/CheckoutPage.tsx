@@ -76,15 +76,15 @@ const CheckoutPage = () => {
 
       if (orderErr) throw orderErr;
 
-      const orderItems = items.map(item => ({
+      const orderItems = items.map(cartItem => ({
         order_id: order.id,
-        item_id: item.itemId,
-        item_name: item.name,
-        quantity: item.quantity,
-        unit_price: item.price,
-        addons: item.addons as unknown as any,
-        notes: item.notes || null,
-        total: (item.price + item.addons.reduce((s, a) => s + a.price, 0)) * item.quantity,
+        item_id: cartItem.itemId,
+        item_name: cartItem.name,
+        quantity: cartItem.quantity,
+        unit_price: cartItem.price,
+        addons: cartItem.addons as unknown as any,
+        notes: cartItem.notes || null,
+        total: (cartItem.price + cartItem.addons.reduce((s, a) => s + a.price, 0)) * cartItem.quantity,
       }));
 
       const { error: itemsErr } = await supabase.from('order_items').insert(orderItems);
