@@ -96,8 +96,8 @@ const MenuPage = () => {
         <img src={hero.hero_image_url || heroImgFallback} alt="Restaurant" className="h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
         <div className="absolute bottom-4 left-0 right-0 container">
-          <h1 className="text-3xl font-bold text-foreground md:text-4xl">{hero.hero_title || t('hero.title')}</h1>
-          <p className="mt-1 text-muted-foreground">{hero.hero_subtitle || t('hero.subtitle')}</p>
+          <h1 className="text-3xl font-bold text-foreground md:text-4xl">{hero.hero_title || t('home.heroTitle')}</h1>
+          <p className="mt-1 text-muted-foreground">{hero.hero_subtitle || t('home.heroSubtitle')}</p>
         </div>
       </div>
 
