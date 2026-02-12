@@ -95,7 +95,10 @@ export type Database = {
           id: string
           image_url: string | null
           is_available: boolean | null
+          is_offer: boolean | null
           name: string
+          offer_badge: string | null
+          offer_price: number | null
           prep_time_minutes: number | null
           price: number
           sort_order: number | null
@@ -108,7 +111,10 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_available?: boolean | null
+          is_offer?: boolean | null
           name: string
+          offer_badge?: string | null
+          offer_price?: number | null
           prep_time_minutes?: number | null
           price: number
           sort_order?: number | null
@@ -121,7 +127,10 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_available?: boolean | null
+          is_offer?: boolean | null
           name?: string
+          offer_badge?: string | null
+          offer_price?: number | null
           prep_time_minutes?: number | null
           price?: number
           sort_order?: number | null

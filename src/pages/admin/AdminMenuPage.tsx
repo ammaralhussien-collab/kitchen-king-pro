@@ -28,6 +28,9 @@ interface Item {
   is_available: boolean;
   prep_time_minutes: number | null;
   image_url: string | null;
+  is_offer: boolean;
+  offer_price: number | null;
+  offer_badge: string | null;
 }
 
 const AdminMenuPage = () => {
@@ -104,6 +107,9 @@ const AdminMenuPage = () => {
       prep_time_minutes: editingItem.prep_time_minutes || 15,
       image_url: editingItem.image_url || null,
       category_id: editingItem.category_id || activeCategory!,
+      is_offer: editingItem.is_offer ?? false,
+      offer_price: editingItem.is_offer ? (editingItem.offer_price || null) : null,
+      offer_badge: editingItem.is_offer ? (editingItem.offer_badge || null) : null,
     };
     if (editingItem.id) {
       await supabase.from('items').update(payload).eq('id', editingItem.id);
@@ -233,6 +239,18 @@ const AdminMenuPage = () => {
                     placeholder="https://... or upload above"
                   />
                 </div>
+              </div>
+              <div className="space-y-3 rounded-lg border border-border p-3">
+                <div className="flex items-center justify-between">
+                  <Label>Mark as Offer</Label>
+                  <Switch checked={editingItem?.is_offer ?? false} onCheckedChange={v => setEditingItem(p => ({ ...p, is_offer: v }))} />
+                </div>
+                {editingItem?.is_offer && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label>Offer Price</Label><Input type="number" step="0.01" value={editingItem?.offer_price ?? ''} onChange={e => setEditingItem(p => ({ ...p, offer_price: e.target.value ? parseFloat(e.target.value) : null }))} placeholder="Discounted price" /></div>
+                    <div><Label>Offer Badge</Label><Input value={editingItem?.offer_badge ?? ''} onChange={e => setEditingItem(p => ({ ...p, offer_badge: e.target.value }))} placeholder="e.g. 20% OFF" /></div>
+                  </div>
+                )}
               </div>
               <Button onClick={saveItem} className="w-full">Save</Button>
             </div>
