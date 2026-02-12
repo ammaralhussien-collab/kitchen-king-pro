@@ -9,11 +9,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from 'sonner';
 import { Truck, Store } from 'lucide-react';
+import { buildWhatsAppMessage, buildWhatsAppUrl, isValidE164, type WhatsAppOrderData } from '@/lib/whatsapp';
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
   const { items, subtotal, clearCart } = useCart();
   const [restaurantId, setRestaurantId] = useState('');
+  const [restaurantName, setRestaurantName] = useState('');
+  const [restaurantPhone, setRestaurantPhone] = useState('');
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [loading, setLoading] = useState(false);
 
@@ -28,9 +31,11 @@ const CheckoutPage = () => {
   });
 
   useEffect(() => {
-    supabase.from('restaurants').select('id, delivery_fee').limit(1).single().then(({ data }) => {
+    supabase.from('restaurants').select('id, name, phone, delivery_fee').limit(1).single().then(({ data }) => {
       if (data) {
         setRestaurantId(data.id);
+        setRestaurantName(data.name);
+        setRestaurantPhone(data.phone || '');
         setDeliveryFee(Number(data.delivery_fee) || 0);
       }
     });
@@ -96,6 +101,35 @@ const CheckoutPage = () => {
         amount: total,
         status: form.paymentMethod === 'cash' ? 'pending' : 'pending',
       });
+
+      // Build and open WhatsApp message
+      if (restaurantPhone && isValidE164(restaurantPhone)) {
+        const waData: WhatsAppOrderData = {
+          orderId: order.id,
+          restaurantName,
+          orderType: form.orderType,
+          scheduledTime: form.scheduledTime || null,
+          customerName: form.name.trim(),
+          customerPhone: form.phone.trim(),
+          deliveryAddress: form.orderType === 'delivery' ? form.address.trim() : null,
+          items: orderItems.map((oi, idx) => ({
+            name: oi.item_name,
+            quantity: oi.quantity,
+            unitPrice: oi.unit_price,
+            addons: (items[idx]?.addons || []).map(a => ({ name: a.name, price: a.price })),
+            notes: oi.notes,
+            total: oi.total,
+          })),
+          subtotal,
+          deliveryFee: form.orderType === 'delivery' ? deliveryFee : 0,
+          total,
+          paymentMethod: form.paymentMethod,
+        };
+        const waUrl = buildWhatsAppUrl(restaurantPhone, buildWhatsAppMessage(waData));
+        window.open(waUrl, '_blank');
+      } else if (restaurantPhone && !isValidE164(restaurantPhone)) {
+        toast.error('Restaurant phone is not in E.164 format. Please ask admin to update it in Settings.');
+      }
 
       clearCart();
       toast.success('Order placed successfully!');

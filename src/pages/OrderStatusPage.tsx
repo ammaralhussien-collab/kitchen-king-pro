@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import StatusBadge from '@/components/StatusBadge';
-import { Check, Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Check, Clock, MessageCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { buildWhatsAppMessage, buildWhatsAppUrl, isValidE164, type WhatsAppOrderData } from '@/lib/whatsapp';
 
 const statusSteps = ['received', 'accepted', 'preparing', 'ready', 'out_for_delivery', 'completed'];
 const pickupSteps = ['received', 'accepted', 'preparing', 'ready', 'completed'];
@@ -13,9 +15,15 @@ interface Order {
   status: string;
   order_type: string;
   customer_name: string;
+  customer_phone: string;
   total: number;
-  created_at: string;
+  subtotal: number;
+  delivery_fee: number;
   delivery_address: string | null;
+  created_at: string;
+  scheduled_time: string | null;
+  payment_method: string;
+  notes: string | null;
 }
 
 interface OrderItem {
@@ -25,12 +33,19 @@ interface OrderItem {
   unit_price: number;
   total: number;
   addons: any;
+  notes: string | null;
+}
+
+interface RestaurantInfo {
+  name: string;
+  phone: string | null;
 }
 
 const OrderStatusPage = () => {
   const { id } = useParams<{ id: string }>();
   const [order, setOrder] = useState<Order | null>(null);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
+  const [restaurant, setRestaurant] = useState<RestaurantInfo | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -39,7 +54,12 @@ const OrderStatusPage = () => {
         supabase.from('orders').select('*').eq('id', id).single(),
         supabase.from('order_items').select('*').eq('order_id', id),
       ]);
-      if (orderRes.data) setOrder(orderRes.data as any);
+      if (orderRes.data) {
+        setOrder(orderRes.data as any);
+        // Fetch restaurant info
+        const { data: rest } = await supabase.from('restaurants').select('name, phone').eq('id', (orderRes.data as any).restaurant_id).single();
+        if (rest) setRestaurant(rest);
+      }
       if (itemsRes.data) setOrderItems(itemsRes.data as any);
     };
     fetchOrder();
@@ -118,6 +138,43 @@ const OrderStatusPage = () => {
           <span className="text-primary">${order.total.toFixed(2)}</span>
         </div>
       </div>
+
+      {/* WhatsApp button */}
+      {restaurant?.phone && isValidE164(restaurant.phone) && (
+        <div className="mt-4 flex justify-center">
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={() => {
+              const waData: WhatsAppOrderData = {
+                orderId: order.id,
+                restaurantName: restaurant.name,
+                orderType: order.order_type as 'delivery' | 'pickup',
+                scheduledTime: order.scheduled_time,
+                customerName: order.customer_name,
+                customerPhone: order.customer_phone,
+                deliveryAddress: order.delivery_address,
+                items: orderItems.map(oi => ({
+                  name: oi.item_name,
+                  quantity: oi.quantity,
+                  unitPrice: oi.unit_price,
+                  addons: Array.isArray(oi.addons) ? oi.addons.map((a: any) => ({ name: a.name, price: a.price })) : [],
+                  notes: oi.notes,
+                  total: oi.total,
+                })),
+                subtotal: order.subtotal,
+                deliveryFee: order.delivery_fee,
+                total: order.total,
+                paymentMethod: order.payment_method,
+              };
+              window.open(buildWhatsAppUrl(restaurant.phone!, buildWhatsAppMessage(waData)), '_blank');
+            }}
+          >
+            <MessageCircle className="h-4 w-4" />
+            Open WhatsApp
+          </Button>
+        </div>
+      )}
 
       <div className="mt-4 flex items-center justify-center gap-1 text-xs text-muted-foreground">
         <Clock className="h-3 w-3" />
