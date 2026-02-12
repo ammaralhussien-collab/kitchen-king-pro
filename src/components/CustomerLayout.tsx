@@ -1,14 +1,19 @@
 import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { ShoppingCart, UtensilsCrossed, User, Tag } from 'lucide-react';
+import { ShoppingCart, UtensilsCrossed, User, Tag, Globe } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/i18n/I18nProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
+import { supportedLanguages, type Language } from '@/i18n/translations';
+
+const langLabels: Record<Language, string> = { de: 'DE', en: 'EN', ar: 'AR' };
 
 const CustomerLayout = () => {
   const { itemCount } = useCart();
   const { user, isAdmin } = useAuth();
+  const { t, lang, setLang } = useI18n();
   const location = useLocation();
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [logoHeight, setLogoHeight] = useState(44);
@@ -39,19 +44,35 @@ const CustomerLayout = () => {
             )}
           </Link>
           <div className="flex items-center gap-3">
+            {/* Language Switcher */}
+            <div className="flex items-center rounded-md border border-border overflow-hidden text-xs">
+              {supportedLanguages.map((l) => (
+                <button
+                  key={l}
+                  onClick={() => setLang(l)}
+                  className={`px-2 py-1 font-medium transition-colors ${
+                    lang === l
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  }`}
+                >
+                  {langLabels[l]}
+                </button>
+              ))}
+            </div>
             <Link
               to="/offers"
               className="flex items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
               <Tag className="h-4 w-4" />
-              Offers
+              {t('app.offers')}
             </Link>
             {isAdmin && (
               <Link
                 to="/admin/orders"
                 className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
-                Admin
+                {t('app.admin')}
               </Link>
             )}
             {!user && (

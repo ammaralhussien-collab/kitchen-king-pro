@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useI18n } from '@/i18n/I18nProvider';
 import StatusBadge from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -37,6 +38,7 @@ interface OrderItem {
 const AdminOrderDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t, formatCurrency } = useI18n();
   const [order, setOrder] = useState<Order | null>(null);
   const [items, setItems] = useState<OrderItem[]>([]);
 
@@ -59,12 +61,12 @@ const AdminOrderDetailPage = () => {
     toast.success(`Status updated to ${status}`);
   };
 
-  if (!order) return <div className="flex h-96 items-center justify-center text-muted-foreground">Loading...</div>;
+  if (!order) return <div className="flex h-96 items-center justify-center text-muted-foreground">{t('app.loading')}</div>;
 
   return (
     <div className="max-w-2xl">
       <button onClick={() => navigate(-1)} className="mb-4 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-4 w-4" /> Back to Orders
+        <ArrowLeft className="h-4 w-4" /> {t('app.backToOrders')}
       </button>
 
       <div className="flex items-center justify-between">
@@ -77,7 +79,7 @@ const AdminOrderDetailPage = () => {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => window.print()}>
-            <Printer className="mr-1 h-4 w-4" /> Print
+            <Printer className="me-1 h-4 w-4" /> {t('app.print')}
           </Button>
         </div>
       </div>
@@ -86,8 +88,8 @@ const AdminOrderDetailPage = () => {
       <div className="mt-6 flex flex-wrap gap-2">
         {order.status === 'received' && (
           <>
-            <Button onClick={() => updateStatus('accepted')} className="bg-accent text-accent-foreground hover:bg-accent/90">Accept Order</Button>
-            <Button variant="destructive" onClick={() => updateStatus('canceled')}>Reject</Button>
+            <Button onClick={() => updateStatus('accepted')} className="bg-accent text-accent-foreground hover:bg-accent/90">{t('admin.acceptOrder')}</Button>
+            <Button variant="destructive" onClick={() => updateStatus('canceled')}>{t('admin.reject')}</Button>
           </>
         )}
         {order.status !== 'received' && order.status !== 'completed' && order.status !== 'canceled' && (
@@ -106,16 +108,16 @@ const AdminOrderDetailPage = () => {
 
       {/* Contact */}
       <div className="mt-6 rounded-xl border border-border bg-card p-4 space-y-2 text-sm">
-        <div className="flex justify-between"><span className="text-muted-foreground">Phone</span><span>{order.customer_phone}</span></div>
-        {order.delivery_address && <div className="flex justify-between"><span className="text-muted-foreground">Address</span><span>{order.delivery_address}</span></div>}
-        <div className="flex justify-between"><span className="text-muted-foreground">Payment</span><span className="capitalize">{order.payment_method}</span></div>
-        <div className="flex justify-between"><span className="text-muted-foreground">Ordered</span><span>{new Date(order.created_at).toLocaleString()}</span></div>
-        {order.notes && <div><span className="text-muted-foreground">Notes: </span><span className="italic">{order.notes}</span></div>}
+        <div className="flex justify-between"><span className="text-muted-foreground">{t('admin.phone')}</span><span>{order.customer_phone}</span></div>
+        {order.delivery_address && <div className="flex justify-between"><span className="text-muted-foreground">{t('admin.address')}</span><span>{order.delivery_address}</span></div>}
+        <div className="flex justify-between"><span className="text-muted-foreground">{t('admin.payment')}</span><span className="capitalize">{order.payment_method}</span></div>
+        <div className="flex justify-between"><span className="text-muted-foreground">{t('admin.ordered')}</span><span>{new Date(order.created_at).toLocaleString()}</span></div>
+        {order.notes && <div><span className="text-muted-foreground">{t('admin.notes')}: </span><span className="italic">{order.notes}</span></div>}
       </div>
 
       {/* Items */}
       <div className="mt-6 rounded-xl border border-border bg-card p-4">
-        <h3 className="font-display font-semibold mb-3">Items</h3>
+        <h3 className="font-display font-semibold mb-3">{t('admin.items')}</h3>
         <div className="space-y-2">
           {items.map(item => (
             <div key={item.id} className="flex justify-between text-sm">
@@ -126,14 +128,14 @@ const AdminOrderDetailPage = () => {
                 )}
                 {item.notes && <p className="text-xs italic text-muted-foreground">"{item.notes}"</p>}
               </div>
-              <span>${item.total.toFixed(2)}</span>
+              <span>{formatCurrency(item.total)}</span>
             </div>
           ))}
         </div>
         <div className="mt-3 space-y-1 border-t border-border pt-3 text-sm">
-          <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>${order.subtotal.toFixed(2)}</span></div>
-          {order.delivery_fee > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Delivery</span><span>${order.delivery_fee.toFixed(2)}</span></div>}
-          <div className="flex justify-between font-display font-bold text-lg"><span>Total</span><span className="text-primary">${order.total.toFixed(2)}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">{t('cart.subtotal')}</span><span>{formatCurrency(order.subtotal)}</span></div>
+          {order.delivery_fee > 0 && <div className="flex justify-between"><span className="text-muted-foreground">{t('checkout.delivery')}</span><span>{formatCurrency(order.delivery_fee)}</span></div>}
+          <div className="flex justify-between font-display font-bold text-lg"><span>{t('cart.total')}</span><span className="text-primary">{formatCurrency(order.total)}</span></div>
         </div>
       </div>
     </div>

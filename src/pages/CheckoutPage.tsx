@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
+import { useI18n } from '@/i18n/I18nProvider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,6 +15,7 @@ import { buildWhatsAppMessage, buildWhatsAppUrl, isValidE164, type WhatsAppOrder
 const CheckoutPage = () => {
   const navigate = useNavigate();
   const { items, subtotal, clearCart } = useCart();
+  const { t, formatCurrency } = useI18n();
   const [restaurantId, setRestaurantId] = useState('');
   const [restaurantName, setRestaurantName] = useState('');
   const [restaurantPhone, setRestaurantPhone] = useState('');
@@ -51,11 +53,11 @@ const CheckoutPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim() || !form.phone.trim()) {
-      toast.error('Please fill in your name and phone number');
+      toast.error(t('checkout.fillRequired'));
       return;
     }
     if (form.orderType === 'delivery' && !form.address.trim()) {
-      toast.error('Please enter your delivery address');
+      toast.error(t('checkout.enterAddress'));
       return;
     }
 
@@ -132,7 +134,7 @@ const CheckoutPage = () => {
       }
 
       clearCart();
-      toast.success('Order placed successfully!');
+      toast.success(t('checkout.orderSuccess'));
       navigate(`/order/${order.id}`);
     } catch (err: any) {
       toast.error(err.message || 'Failed to place order');
@@ -145,16 +147,16 @@ const CheckoutPage = () => {
 
   return (
     <div className="container max-w-2xl py-6">
-      <h1 className="font-display text-2xl font-bold">Checkout</h1>
+      <h1 className="font-display text-2xl font-bold">{t('checkout.title')}</h1>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-6">
         {/* Order Type */}
         <div className="space-y-3">
-          <Label className="font-display text-lg font-semibold">Order Type</Label>
+          <Label className="font-display text-lg font-semibold">{t('checkout.orderType')}</Label>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { value: 'pickup', label: 'Pickup', icon: Store },
-              { value: 'delivery', label: 'Delivery', icon: Truck },
+              { value: 'pickup', label: t('checkout.pickup'), icon: Store },
+              { value: 'delivery', label: t('checkout.delivery'), icon: Truck },
             ].map(({ value, label, icon: Icon }) => (
               <button
                 key={value}
@@ -173,25 +175,25 @@ const CheckoutPage = () => {
 
         {/* Contact */}
         <div className="space-y-3">
-          <Label className="font-display text-lg font-semibold">Contact Info</Label>
-          <Input placeholder="Your name" value={form.name} onChange={e => update('name', e.target.value)} required />
-          <Input placeholder="Phone number" type="tel" value={form.phone} onChange={e => update('phone', e.target.value)} required />
+          <Label className="font-display text-lg font-semibold">{t('checkout.contactInfo')}</Label>
+          <Input placeholder={t('checkout.name')} value={form.name} onChange={e => update('name', e.target.value)} required />
+          <Input placeholder={t('checkout.phone')} type="tel" value={form.phone} onChange={e => update('phone', e.target.value)} required />
         </div>
 
         {/* Delivery address */}
         {form.orderType === 'delivery' && (
           <div className="space-y-3">
-            <Label className="font-display text-lg font-semibold">Delivery Address</Label>
-            <Textarea placeholder="Enter your full address" value={form.address} onChange={e => update('address', e.target.value)} required />
+            <Label className="font-display text-lg font-semibold">{t('checkout.deliveryAddress')}</Label>
+            <Textarea placeholder={t('checkout.addressPlaceholder')} value={form.address} onChange={e => update('address', e.target.value)} required />
           </div>
         )}
 
         {/* Schedule */}
         <div className="space-y-3">
-          <Label className="font-display text-lg font-semibold">When</Label>
+          <Label className="font-display text-lg font-semibold">{t('checkout.when')}</Label>
           <RadioGroup value={form.scheduledTime ? 'scheduled' : 'asap'} onValueChange={v => v === 'asap' && update('scheduledTime', '')}>
-            <div className="flex items-center gap-2"><RadioGroupItem value="asap" id="asap" /><Label htmlFor="asap">ASAP</Label></div>
-            <div className="flex items-center gap-2"><RadioGroupItem value="scheduled" id="scheduled" /><Label htmlFor="scheduled">Schedule for later</Label></div>
+            <div className="flex items-center gap-2"><RadioGroupItem value="asap" id="asap" /><Label htmlFor="asap">{t('checkout.asap')}</Label></div>
+            <div className="flex items-center gap-2"><RadioGroupItem value="scheduled" id="scheduled" /><Label htmlFor="scheduled">{t('checkout.schedule')}</Label></div>
           </RadioGroup>
           {form.scheduledTime !== '' && form.scheduledTime !== undefined && (
             <Input type="datetime-local" value={form.scheduledTime} onChange={e => update('scheduledTime', e.target.value)} />
@@ -200,32 +202,32 @@ const CheckoutPage = () => {
 
         {/* Payment */}
         <div className="space-y-3">
-          <Label className="font-display text-lg font-semibold">Payment Method</Label>
+          <Label className="font-display text-lg font-semibold">{t('checkout.paymentMethod')}</Label>
           <RadioGroup value={form.paymentMethod} onValueChange={v => update('paymentMethod', v)}>
-            <div className="flex items-center gap-2"><RadioGroupItem value="cash" id="cash" /><Label htmlFor="cash">Cash on {form.orderType === 'delivery' ? 'delivery' : 'pickup'}</Label></div>
-            <div className="flex items-center gap-2"><RadioGroupItem value="online" id="online" /><Label htmlFor="online">Pay online</Label></div>
+            <div className="flex items-center gap-2"><RadioGroupItem value="cash" id="cash" /><Label htmlFor="cash">{t('checkout.cash')} {t('checkout.cashOn')} {form.orderType === 'delivery' ? t('checkout.delivery').toLowerCase() : t('checkout.pickup').toLowerCase()}</Label></div>
+            <div className="flex items-center gap-2"><RadioGroupItem value="online" id="online" /><Label htmlFor="online">{t('checkout.payOnline')}</Label></div>
           </RadioGroup>
         </div>
 
         {/* Notes */}
         <div className="space-y-3">
-          <Label className="font-display text-lg font-semibold">Order Notes</Label>
-          <Textarea placeholder="Any special instructions..." value={form.notes} onChange={e => update('notes', e.target.value)} rows={2} />
+          <Label className="font-display text-lg font-semibold">{t('checkout.orderNotes')}</Label>
+          <Textarea placeholder={t('checkout.notesPlaceholder')} value={form.notes} onChange={e => update('notes', e.target.value)} rows={2} />
         </div>
 
         {/* Summary */}
         <div className="rounded-xl border border-border bg-card p-4 space-y-2">
-          <div className="flex justify-between text-sm"><span className="text-muted-foreground">Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
+          <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t('cart.subtotal')}</span><span>{formatCurrency(subtotal)}</span></div>
           {form.orderType === 'delivery' && (
-            <div className="flex justify-between text-sm"><span className="text-muted-foreground">Delivery fee</span><span>${deliveryFee.toFixed(2)}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t('checkout.deliveryFee')}</span><span>{formatCurrency(deliveryFee)}</span></div>
           )}
           <div className="flex justify-between border-t border-border pt-2 font-display text-lg font-bold">
-            <span>Total</span><span className="text-primary">${total.toFixed(2)}</span>
+            <span>{t('cart.total')}</span><span className="text-primary">{formatCurrency(total)}</span>
           </div>
         </div>
 
         <Button type="submit" className="w-full text-base font-semibold" size="lg" disabled={loading}>
-          {loading ? 'Placing Order...' : `Place Order — $${total.toFixed(2)}`}
+          {loading ? t('checkout.placingOrder') : `${t('checkout.placeOrder')} — ${formatCurrency(total)}`}
         </Button>
       </form>
     </div>

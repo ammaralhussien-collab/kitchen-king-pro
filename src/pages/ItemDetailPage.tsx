@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
+import { useI18n } from '@/i18n/I18nProvider';
 import { Minus, Plus, ArrowLeft, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,7 @@ const ItemDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { addItem } = useCart();
+  const { t, formatCurrency } = useI18n();
   const [item, setItem] = useState<Item | null>(null);
   const [addons, setAddons] = useState<Addon[]>([]);
   const [selectedAddons, setSelectedAddons] = useState<Set<string>>(new Set());
@@ -49,7 +51,7 @@ const ItemDetailPage = () => {
     fetch();
   }, [id]);
 
-  if (!item) return <div className="flex h-96 items-center justify-center text-muted-foreground">Loading...</div>;
+  if (!item) return <div className="flex h-96 items-center justify-center text-muted-foreground">{t('app.loading')}</div>;
 
   const toggleAddon = (addonId: string) => {
     setSelectedAddons(prev => {
@@ -75,14 +77,14 @@ const ItemDetailPage = () => {
       notes,
       image_url: item.image_url,
     });
-    toast.success(`${item.name} added to cart`);
+    toast.success(`${item.name} ${t('item.addedToCart')}`);
     navigate('/menu');
   };
 
   return (
     <div className="container max-w-2xl py-6">
       <button onClick={() => navigate(-1)} className="mb-4 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-4 w-4" /> Back
+        <ArrowLeft className="h-4 w-4" /> {t('app.back')}
       </button>
 
       {item.image_url ? (
@@ -97,15 +99,15 @@ const ItemDetailPage = () => {
         <div className="flex items-start justify-between gap-4">
           <h1 className="font-display text-2xl font-bold">{item.name}</h1>
           <div className="text-right">
-            <span className="font-display text-2xl font-bold text-primary">${effectivePrice.toFixed(2)}</span>
+            <span className="font-display text-2xl font-bold text-primary">{formatCurrency(effectivePrice)}</span>
             {item.is_offer && item.offer_price && (
-              <span className="ml-2 text-sm text-muted-foreground line-through">${item.price.toFixed(2)}</span>
+              <span className="ms-2 text-sm text-muted-foreground line-through">{formatCurrency(item.price)}</span>
             )}
           </div>
         </div>
         {item.prep_time_minutes && (
           <span className="mt-2 inline-flex items-center gap-1 text-sm text-muted-foreground">
-            <Clock className="h-3.5 w-3.5" /> {item.prep_time_minutes} min prep time
+            <Clock className="h-3.5 w-3.5" /> {item.prep_time_minutes} {t('app.min')} {t('app.prepTime')}
           </span>
         )}
         <p className="mt-3 text-muted-foreground">{item.description}</p>
@@ -113,7 +115,7 @@ const ItemDetailPage = () => {
 
       {addons.length > 0 && (
         <div className="mt-6">
-          <h3 className="font-display text-lg font-semibold">Add-ons</h3>
+          <h3 className="font-display text-lg font-semibold">{t('item.addons')}</h3>
           <div className="mt-3 space-y-3">
             {addons.map(addon => (
               <label key={addon.id} className="flex cursor-pointer items-center justify-between rounded-lg border border-border p-3 transition-colors hover:bg-muted/50">
@@ -121,7 +123,7 @@ const ItemDetailPage = () => {
                   <Checkbox checked={selectedAddons.has(addon.id)} onCheckedChange={() => toggleAddon(addon.id)} />
                   <span className="text-sm font-medium">{addon.name}</span>
                 </div>
-                <span className="text-sm text-muted-foreground">+${addon.price.toFixed(2)}</span>
+                <span className="text-sm text-muted-foreground">+{formatCurrency(addon.price)}</span>
               </label>
             ))}
           </div>
@@ -129,8 +131,8 @@ const ItemDetailPage = () => {
       )}
 
       <div className="mt-6">
-        <h3 className="font-display text-lg font-semibold">Special Instructions</h3>
-        <Textarea className="mt-2" placeholder="Any allergies or preferences..." value={notes} onChange={e => setNotes(e.target.value)} rows={3} />
+        <h3 className="font-display text-lg font-semibold">{t('item.specialInstructions')}</h3>
+        <Textarea className="mt-2" placeholder={t('item.allergiesPlaceholder')} value={notes} onChange={e => setNotes(e.target.value)} rows={3} />
       </div>
 
       <div className="mt-6 flex items-center gap-4">
@@ -140,7 +142,7 @@ const ItemDetailPage = () => {
           <button onClick={() => setQuantity(quantity + 1)} className="px-3 py-2 text-muted-foreground hover:text-foreground"><Plus className="h-4 w-4" /></button>
         </div>
         <Button onClick={handleAdd} className="flex-1 text-base font-semibold" size="lg">
-          Add to Cart — ${totalPrice.toFixed(2)}
+          {t('item.addToCart')} — {formatCurrency(totalPrice)}
         </Button>
       </div>
     </div>

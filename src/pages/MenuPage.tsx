@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
+import { useI18n } from '@/i18n/I18nProvider';
 import { Plus, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
@@ -40,6 +41,7 @@ const MenuPage = () => {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [hero, setHero] = useState<HeroData>({ hero_image_url: null, hero_title: null, hero_subtitle: null });
   const { addItem } = useCart();
+  const { t, formatCurrency } = useI18n();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -71,7 +73,7 @@ const MenuPage = () => {
       notes: '',
       image_url: item.image_url,
     });
-    toast.success(`${item.name} added to cart`);
+    toast.success(`${item.name} ${t('item.addedToCart')}`);
   };
 
   const filteredItems = activeCategory ? items.filter(i => i.category_id === activeCategory) : items;
@@ -83,8 +85,8 @@ const MenuPage = () => {
         <img src={hero.hero_image_url || heroImgFallback} alt="Restaurant" className="h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
         <div className="absolute bottom-4 left-0 right-0 container">
-          <h1 className="text-3xl font-bold text-foreground md:text-4xl">{hero.hero_title || 'Our Menu'}</h1>
-          <p className="mt-1 text-muted-foreground">{hero.hero_subtitle || 'Authentic Italian cuisine, made with love'}</p>
+          <h1 className="text-3xl font-bold text-foreground md:text-4xl">{hero.hero_title || t('hero.title')}</h1>
+          <p className="mt-1 text-muted-foreground">{hero.hero_subtitle || t('hero.subtitle')}</p>
         </div>
       </div>
 
@@ -134,9 +136,9 @@ const MenuPage = () => {
                     <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{item.description}</p>
                   </div>
                   <div className="shrink-0 text-right">
-                    <span className="font-display text-lg font-bold text-primary">${getEffectivePrice(item).toFixed(2)}</span>
+                    <span className="font-display text-lg font-bold text-primary">{formatCurrency(getEffectivePrice(item))}</span>
                     {item.is_offer && item.offer_price && (
-                      <span className="ml-1 text-xs text-muted-foreground line-through">${item.price.toFixed(2)}</span>
+                      <span className="ms-1 text-xs text-muted-foreground line-through">{formatCurrency(item.price)}</span>
                     )}
                   </div>
                 </div>
@@ -144,15 +146,15 @@ const MenuPage = () => {
                   {item.prep_time_minutes && (
                     <span className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Clock className="h-3 w-3" />
-                      {item.prep_time_minutes} min
+                      {item.prep_time_minutes} {t('app.min')}
                     </span>
                   )}
                   <button
                     onClick={() => quickAdd(item)}
-                    className="ml-auto flex items-center gap-1 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-transform hover:scale-105 active:scale-95"
+                    className="ms-auto flex items-center gap-1 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-transform hover:scale-105 active:scale-95"
                   >
                     <Plus className="h-3 w-3" />
-                    Add
+                    {t('item.add')}
                   </button>
                 </div>
               </div>
