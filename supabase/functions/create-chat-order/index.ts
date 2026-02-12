@@ -2,7 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 }
 
 interface OrderItemInput {
@@ -21,36 +21,39 @@ interface ChatOrderInput {
   items: OrderItemInput[]
 }
 
-async function validateAuth(req: Request) {
-  const authHeader = req.headers.get('Authorization')
-  if (!authHeader?.startsWith('Bearer ')) {
-    throw new Error('Unauthorized: Missing or invalid authorization header')
-  }
-
-  const token = authHeader.replace('Bearer ', '')
-  const supabase = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_ANON_KEY')!
-  )
-
-  const { data, error } = await supabase.auth.getClaims(token)
-  if (error || !data?.claims) {
-    throw new Error('Unauthorized: Invalid token')
-  }
-
-  return data.claims.sub
-}
-
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    const userId = await validateAuth(req)
+    // Validate JWT and create authenticated client (no service role key)
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    const token = authHeader.replace('Bearer ', '')
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const supabase = createClient(supabaseUrl, serviceRoleKey)
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
+
+    // Verify the token
+    const authClient = createClient(supabaseUrl, supabaseAnonKey)
+    const { data: claimsData, error: claimsErr } = await authClient.auth.getClaims(token)
+    if (claimsErr || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: 'Unauthorized: Invalid token' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    const userId = claimsData.claims.sub
+
+    // Create a client that acts AS the authenticated user (respects RLS)
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    })
 
     const body: ChatOrderInput = await req.json()
 
@@ -71,7 +74,7 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Fetch item prices from DB (server-side price truth)
+    // Fetch item prices from DB (public read via RLS)
     const itemIds = body.items.map(i => i.item_id)
     const { data: dbItems, error: itemsErr } = await supabase
       .from('items')
@@ -86,7 +89,6 @@ Deno.serve(async (req) => {
 
     const itemMap = new Map(dbItems.map(i => [i.id, i]))
 
-    // Validate all items exist and are available
     for (const orderItem of body.items) {
       const dbItem = itemMap.get(orderItem.item_id)
       if (!dbItem) {
@@ -101,7 +103,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Fetch all addons needed
+    // Fetch addons (public read via RLS)
     const allAddonIds = body.items.flatMap(i => i.addon_ids)
     let addonMap = new Map<string, { id: string; name: string; price: number }>()
     if (allAddonIds.length > 0) {
@@ -115,7 +117,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Fetch restaurant
+    // Fetch restaurant (public read via RLS)
     const { data: restaurant } = await supabase
       .from('restaurants')
       .select('id, delivery_fee')
@@ -154,11 +156,12 @@ Deno.serve(async (req) => {
     const deliveryFee = body.order_type === 'delivery' ? (Number(restaurant.delivery_fee) || 0) : 0
     const total = subtotal + deliveryFee
 
-    // Create order
+    // Create order as the authenticated user (RLS enforces user_id = auth.uid())
     const { data: order, error: orderErr } = await supabase
       .from('orders')
       .insert({
         restaurant_id: restaurant.id,
+        user_id: userId,
         order_type: body.order_type,
         payment_method: 'cash',
         customer_name: body.customer_name.trim(),
@@ -175,23 +178,25 @@ Deno.serve(async (req) => {
       .single()
 
     if (orderErr || !order) {
+      console.error('Order insert error:', orderErr)
       return new Response(JSON.stringify({ error: 'Failed to create order' }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    // Insert order items
+    // Insert order items (RLS checks order ownership)
     const { error: oiErr } = await supabase
       .from('order_items')
       .insert(orderItemsData.map(oi => ({ ...oi, order_id: order.id })))
 
     if (oiErr) {
+      console.error('Order items insert error:', oiErr)
       return new Response(JSON.stringify({ error: 'Failed to create order items' }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    // Create payment record
+    // Create payment record (RLS checks order ownership)
     await supabase.from('payments').insert({
       order_id: order.id,
       method: 'cash',
@@ -209,10 +214,10 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : 'Internal error';
-    const isAuthError = errorMessage.includes('Unauthorized') || errorMessage.includes('Forbidden');
+    const errorMessage = err instanceof Error ? err.message : 'Internal error'
+    console.error('create-chat-order error:', err)
     return new Response(JSON.stringify({ error: errorMessage }), {
-      status: isAuthError ? (errorMessage.includes('Forbidden') ? 403 : 401) : 500,
+      status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   }
