@@ -20,6 +20,7 @@ import AdminMenuPage from "@/pages/admin/AdminMenuPage";
 import AdminSettingsPage from "@/pages/admin/AdminSettingsPage";
 import OffersPage from "@/pages/OffersPage";
 import NotFound from "./pages/NotFound";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 const queryClient = new QueryClient();
 
