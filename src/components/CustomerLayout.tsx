@@ -11,12 +11,14 @@ const CustomerLayout = () => {
   const { user, isAdmin } = useAuth();
   const location = useLocation();
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoHeight, setLogoHeight] = useState(44);
   const [restaurantName, setRestaurantName] = useState('Bella Cucina');
 
   useEffect(() => {
-    supabase.from('restaurants').select('logo_url, name').limit(1).single().then(({ data }) => {
+    supabase.from('restaurants').select('logo_url, name, logo_height_px').limit(1).single().then(({ data }) => {
       if (data) {
         setLogoUrl(data.logo_url);
+        setLogoHeight(data.logo_height_px ?? 44);
         setRestaurantName(data.name);
       }
     });
@@ -28,7 +30,7 @@ const CustomerLayout = () => {
         <div className="container flex h-16 items-center justify-between">
           <Link to="/menu" className="flex items-center gap-2">
             {logoUrl ? (
-              <img src={logoUrl} alt={restaurantName} className="h-8 w-8 rounded-full object-cover" />
+              <img src={logoUrl} alt={restaurantName} style={{ height: `${logoHeight}px`, width: 'auto' }} className="object-contain" />
             ) : (
               <>
                 <UtensilsCrossed className="h-6 w-6 text-primary" />

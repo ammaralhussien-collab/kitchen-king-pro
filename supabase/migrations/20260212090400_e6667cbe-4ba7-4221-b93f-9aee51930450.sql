@@ -1,0 +1,1 @@
+ALTER TABLE public.restaurants ADD COLUMN logo_height_px integer DEFAULT 44;
