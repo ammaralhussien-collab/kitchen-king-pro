@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useI18n } from '@/i18n/I18nProvider';
+import { getLocalizedName } from '@/lib/localize';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,6 +16,9 @@ interface Category {
   id: string;
   restaurant_id: string;
   name: string;
+  name_en: string | null;
+  name_de: string | null;
+  name_ar: string | null;
   description: string | null;
   is_active: boolean;
   sort_order: number;
@@ -24,7 +28,13 @@ interface Item {
   id: string;
   category_id: string;
   name: string;
+  name_en: string | null;
+  name_de: string | null;
+  name_ar: string | null;
   description: string | null;
+  desc_en: string | null;
+  desc_de: string | null;
+  desc_ar: string | null;
   price: number;
   is_available: boolean;
   prep_time_minutes: number | null;
@@ -45,7 +55,7 @@ const AdminMenuPage = () => {
   const [catDialogOpen, setCatDialogOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { t, formatCurrency } = useI18n();
+  const { t, lang, formatCurrency } = useI18n();
 
   const fetchData = async () => {
     const [catRes, itemRes, restRes] = await Promise.all([
@@ -54,10 +64,10 @@ const AdminMenuPage = () => {
       supabase.from('restaurants').select('id').limit(1).single(),
     ]);
     if (catRes.data) {
-      setCategories(catRes.data);
+      setCategories(catRes.data as any);
       if (!activeCategory && catRes.data.length > 0) setActiveCategory(catRes.data[0].id);
     }
-    if (itemRes.data) setItems(itemRes.data);
+    if (itemRes.data) setItems(itemRes.data as any);
     if (restRes.data) setRestaurantId(restRes.data.id);
   };
 
@@ -65,12 +75,20 @@ const AdminMenuPage = () => {
 
   const saveCategory = async () => {
     if (!editingCategory?.name?.trim()) return;
+    const payload: any = {
+      name: editingCategory.name,
+      name_de: editingCategory.name_de || editingCategory.name,
+      name_en: editingCategory.name_en || null,
+      name_ar: editingCategory.name_ar || null,
+      description: editingCategory.description,
+      is_active: editingCategory.is_active,
+    };
     if (editingCategory.id) {
-      await supabase.from('categories').update({ name: editingCategory.name, description: editingCategory.description, is_active: editingCategory.is_active }).eq('id', editingCategory.id);
+      await supabase.from('categories').update(payload).eq('id', editingCategory.id);
     } else {
-      await supabase.from('categories').insert({ name: editingCategory.name, description: editingCategory.description || null, restaurant_id: restaurantId, sort_order: categories.length });
+      await supabase.from('categories').insert({ ...payload, restaurant_id: restaurantId, sort_order: categories.length });
     }
-    toast.success('Category saved');
+    toast.success(t('app.save'));
     setCatDialogOpen(false);
     setEditingCategory(null);
     fetchData();
@@ -78,7 +96,7 @@ const AdminMenuPage = () => {
 
   const deleteCategory = async (id: string) => {
     await supabase.from('categories').delete().eq('id', id);
-    toast.success('Category deleted');
+    toast.success(t('app.delete'));
     fetchData();
   };
 
@@ -91,9 +109,9 @@ const AdminMenuPage = () => {
       if (error) throw error;
       const { data: urlData } = supabase.storage.from('menu-images').getPublicUrl(fileName);
       setEditingItem(p => ({ ...p, image_url: urlData.publicUrl }));
-      toast.success('Image uploaded');
+      toast.success(t('admin.upload'));
     } catch (err: any) {
-      toast.error('Upload failed: ' + err.message);
+      toast.error(err.message);
     } finally {
       setUploading(false);
     }
@@ -101,9 +119,15 @@ const AdminMenuPage = () => {
 
   const saveItem = async () => {
     if (!editingItem?.name?.trim() || !editingItem?.price) return;
-    const payload = {
+    const payload: any = {
       name: editingItem.name,
+      name_de: editingItem.name_de || editingItem.name,
+      name_en: editingItem.name_en || null,
+      name_ar: editingItem.name_ar || null,
       description: editingItem.description || null,
+      desc_de: editingItem.desc_de || editingItem.description || null,
+      desc_en: editingItem.desc_en || null,
+      desc_ar: editingItem.desc_ar || null,
       price: editingItem.price,
       is_available: editingItem.is_available ?? true,
       prep_time_minutes: editingItem.prep_time_minutes || 15,
@@ -118,7 +142,7 @@ const AdminMenuPage = () => {
     } else {
       await supabase.from('items').insert({ ...payload, sort_order: items.length });
     }
-    toast.success('Item saved');
+    toast.success(t('app.save'));
     setItemDialogOpen(false);
     setEditingItem(null);
     fetchData();
@@ -126,7 +150,7 @@ const AdminMenuPage = () => {
 
   const deleteItem = async (id: string) => {
     await supabase.from('items').delete().eq('id', id);
-    toast.success('Item deleted');
+    toast.success(t('app.delete'));
     fetchData();
   };
 
@@ -154,10 +178,13 @@ const AdminMenuPage = () => {
               </Button>
             </DialogTrigger>
             <DialogContent>
-              <DialogHeader><DialogTitle>{editingCategory?.id ? t('app.edit') : t('app.add')} Category</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{editingCategory?.id ? t('app.edit') : t('app.add')} — {t('admin.categories')}</DialogTitle></DialogHeader>
               <div className="space-y-3">
-                <div><Label>Name</Label><Input value={editingCategory?.name || ''} onChange={e => setEditingCategory(p => ({ ...p, name: e.target.value }))} /></div>
-                <div><Label>Description</Label><Input value={editingCategory?.description || ''} onChange={e => setEditingCategory(p => ({ ...p, description: e.target.value }))} /></div>
+                <div><Label>{t('admin.categoryName')}</Label><Input value={editingCategory?.name || ''} onChange={e => setEditingCategory(p => ({ ...p, name: e.target.value }))} /></div>
+                <div><Label>{t('admin.nameDE')}</Label><Input value={editingCategory?.name_de || ''} onChange={e => setEditingCategory(p => ({ ...p, name_de: e.target.value }))} /></div>
+                <div><Label>{t('admin.nameEN')}</Label><Input value={editingCategory?.name_en || ''} onChange={e => setEditingCategory(p => ({ ...p, name_en: e.target.value }))} /></div>
+                <div><Label>{t('admin.nameAR')}</Label><Input value={editingCategory?.name_ar || ''} onChange={e => setEditingCategory(p => ({ ...p, name_ar: e.target.value }))} /></div>
+                <div><Label>{t('admin.categoryDesc')}</Label><Input value={editingCategory?.description || ''} onChange={e => setEditingCategory(p => ({ ...p, description: e.target.value }))} /></div>
                 <Button onClick={saveCategory} className="w-full">{t('app.save')}</Button>
               </div>
             </DialogContent>
@@ -172,7 +199,7 @@ const AdminMenuPage = () => {
                   activeCategory === cat.id ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'
                 }`}
               >
-                {cat.name}
+                {getLocalizedName(cat, lang)}
               </button>
               <button onClick={() => { setEditingCategory(cat); setCatDialogOpen(true); }} className="text-muted-foreground hover:text-foreground"><Pencil className="h-3 w-3" /></button>
               <button onClick={() => deleteCategory(cat.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-3 w-3" /></button>
@@ -191,27 +218,37 @@ const AdminMenuPage = () => {
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg">
-            <DialogHeader><DialogTitle>{editingItem?.id ? t('app.edit') : t('app.add')} Item</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{editingItem?.id ? t('app.edit') : t('app.add')} — {t('admin.items')}</DialogTitle></DialogHeader>
             <div className="space-y-4 max-h-[65vh] overflow-y-auto pe-1">
-              <div><Label>Name</Label><Input value={editingItem?.name || ''} onChange={e => setEditingItem(p => ({ ...p, name: e.target.value }))} /></div>
-              <div><Label>Description</Label><Textarea value={editingItem?.description || ''} onChange={e => setEditingItem(p => ({ ...p, description: e.target.value }))} /></div>
+              <div><Label>{t('admin.itemName')}</Label><Input value={editingItem?.name || ''} onChange={e => setEditingItem(p => ({ ...p, name: e.target.value }))} /></div>
+              <div className="grid grid-cols-3 gap-2">
+                <div><Label>{t('admin.nameDE')}</Label><Input value={editingItem?.name_de || ''} onChange={e => setEditingItem(p => ({ ...p, name_de: e.target.value }))} /></div>
+                <div><Label>{t('admin.nameEN')}</Label><Input value={editingItem?.name_en || ''} onChange={e => setEditingItem(p => ({ ...p, name_en: e.target.value }))} /></div>
+                <div><Label>{t('admin.nameAR')}</Label><Input value={editingItem?.name_ar || ''} onChange={e => setEditingItem(p => ({ ...p, name_ar: e.target.value }))} /></div>
+              </div>
+              <div><Label>{t('admin.itemDesc')}</Label><Textarea value={editingItem?.description || ''} onChange={e => setEditingItem(p => ({ ...p, description: e.target.value }))} /></div>
+              <div className="grid grid-cols-3 gap-2">
+                <div><Label>{t('admin.descDE')}</Label><Input value={editingItem?.desc_de || ''} onChange={e => setEditingItem(p => ({ ...p, desc_de: e.target.value }))} /></div>
+                <div><Label>{t('admin.descEN')}</Label><Input value={editingItem?.desc_en || ''} onChange={e => setEditingItem(p => ({ ...p, desc_en: e.target.value }))} /></div>
+                <div><Label>{t('admin.descAR')}</Label><Input value={editingItem?.desc_ar || ''} onChange={e => setEditingItem(p => ({ ...p, desc_ar: e.target.value }))} /></div>
+              </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><Label>Price</Label><Input type="number" step="0.01" value={editingItem?.price || ''} onChange={e => setEditingItem(p => ({ ...p, price: parseFloat(e.target.value) }))} /></div>
-                <div><Label>Prep Time (min)</Label><Input type="number" value={editingItem?.prep_time_minutes || ''} onChange={e => setEditingItem(p => ({ ...p, prep_time_minutes: parseInt(e.target.value) }))} /></div>
+                <div><Label>{t('admin.price')}</Label><Input type="number" step="0.01" value={editingItem?.price || ''} onChange={e => setEditingItem(p => ({ ...p, price: parseFloat(e.target.value) }))} /></div>
+                <div><Label>{t('admin.prepTime')}</Label><Input type="number" value={editingItem?.prep_time_minutes || ''} onChange={e => setEditingItem(p => ({ ...p, prep_time_minutes: parseInt(e.target.value) }))} /></div>
               </div>
               <div>
-                <Label>Category</Label>
+                <Label>{t('admin.category')}</Label>
                 <Select value={editingItem?.category_id || ''} onValueChange={v => setEditingItem(p => ({ ...p, category_id: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t('admin.selectCategory')} /></SelectTrigger>
                   <SelectContent>
                     {categories.map(cat => (
-                      <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                      <SelectItem key={cat.id} value={cat.id}>{getLocalizedName(cat, lang)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label>Image</Label>
+                <Label>{t('admin.image')}</Label>
                 <div className="mt-1 space-y-2">
                   {editingItem?.image_url && (
                     <div className="relative w-full h-32 rounded-md overflow-hidden border border-border">
@@ -227,18 +264,18 @@ const AdminMenuPage = () => {
                       onChange={e => { if (e.target.files?.[0]) handleImageUpload(e.target.files[0]); }}
                     />
                     <Button type="button" variant="outline" size="sm" disabled={uploading} onClick={() => fileInputRef.current?.click()}>
-                      {uploading ? 'Uploading…' : <><Upload className="me-1 h-3 w-3" /> Upload</>}
+                      {uploading ? t('admin.uploading') : <><Upload className="me-1 h-3 w-3" /> {t('admin.upload')}</>}
                     </Button>
                     {!editingItem?.image_url && (
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <ImageIcon className="h-3 w-3" /> Or paste URL below
+                        <ImageIcon className="h-3 w-3" /> {t('admin.orPasteUrl')}
                       </div>
                     )}
                   </div>
                   <Input
                     value={editingItem?.image_url || ''}
                     onChange={e => setEditingItem(p => ({ ...p, image_url: e.target.value }))}
-                    placeholder="https://... or upload above"
+                    placeholder="https://..."
                   />
                 </div>
               </div>
@@ -249,8 +286,8 @@ const AdminMenuPage = () => {
                 </div>
                 {editingItem?.is_offer && (
                   <div className="grid grid-cols-2 gap-3">
-                    <div><Label>Offer Price</Label><Input type="number" step="0.01" value={editingItem?.offer_price ?? ''} onChange={e => setEditingItem(p => ({ ...p, offer_price: e.target.value ? parseFloat(e.target.value) : null }))} placeholder="Discounted price" /></div>
-                    <div><Label>Offer Badge</Label><Input value={editingItem?.offer_badge ?? ''} onChange={e => setEditingItem(p => ({ ...p, offer_badge: e.target.value }))} placeholder="e.g. 20% OFF" /></div>
+                    <div><Label>{t('admin.offerPrice')}</Label><Input type="number" step="0.01" value={editingItem?.offer_price ?? ''} onChange={e => setEditingItem(p => ({ ...p, offer_price: e.target.value ? parseFloat(e.target.value) : null }))} /></div>
+                    <div><Label>{t('admin.offerBadge')}</Label><Input value={editingItem?.offer_badge ?? ''} onChange={e => setEditingItem(p => ({ ...p, offer_badge: e.target.value }))} placeholder="z.B. 20% RABATT" /></div>
                   </div>
                 )}
               </div>
@@ -266,10 +303,10 @@ const AdminMenuPage = () => {
             <div className="flex items-center gap-3">
               <GripVertical className="h-4 w-4 text-muted-foreground" />
               {item.image_url && (
-                <img src={item.image_url} alt={item.name} className="h-10 w-10 rounded object-cover" />
+                <img src={item.image_url} alt={getLocalizedName(item, lang)} className="h-10 w-10 rounded object-cover" />
               )}
               <div className="flex items-center gap-2">
-                <span className="font-medium">{item.name}</span>
+                <span className="font-medium">{getLocalizedName(item, lang)}</span>
                 {item.is_offer && (
                   <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold text-accent-foreground">{t('admin.offer')}</span>
                 )}

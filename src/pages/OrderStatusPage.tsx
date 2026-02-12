@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Check, Clock, MessageCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { buildWhatsAppMessage, buildWhatsAppUrl, isValidE164, type WhatsAppOrderData } from '@/lib/whatsapp';
+import type { TranslationKey } from '@/i18n/translations';
 
 const statusSteps = ['received', 'accepted', 'preparing', 'ready', 'out_for_delivery', 'completed'];
 const pickupSteps = ['received', 'accepted', 'preparing', 'ready', 'completed'];
@@ -81,6 +82,12 @@ const OrderStatusPage = () => {
   const currentIdx = steps.indexOf(order.status);
   const isCanceled = order.status === 'canceled';
 
+  const getStepLabel = (s: string) => {
+    const key = `status.${s}` as TranslationKey;
+    const val = t(key);
+    return val !== key ? val : s.replace('_', ' ');
+  };
+
   return (
     <div className="container max-w-2xl py-8">
       <div className="text-center">
@@ -108,7 +115,7 @@ const OrderStatusPage = () => {
                 >
                   {i < currentIdx ? <Check className="h-4 w-4" /> : i + 1}
                 </motion.div>
-                <span className="mt-1 text-[10px] capitalize text-muted-foreground hidden sm:block">{step.replace('_', ' ')}</span>
+                <span className="mt-1 text-[10px] text-muted-foreground hidden sm:block">{getStepLabel(step)}</span>
                 {i < steps.length - 1 && (
                   <div className="absolute" />
                 )}

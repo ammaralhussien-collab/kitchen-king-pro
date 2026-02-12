@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { ArrowLeft, Printer } from 'lucide-react';
+import type { TranslationKey } from '@/i18n/translations';
 
 const allStatuses = ['received', 'accepted', 'preparing', 'ready', 'out_for_delivery', 'completed', 'canceled'];
 
@@ -58,10 +59,17 @@ const AdminOrderDetailPage = () => {
     const { error } = await supabase.from('orders').update({ status: status as any }).eq('id', id);
     if (error) { toast.error(error.message); return; }
     setOrder(prev => prev ? { ...prev, status } : null);
-    toast.success(`Status updated to ${status}`);
+    const statusKey = `status.${status}` as TranslationKey;
+    toast.success(`${t('admin.statusUpdated')} ${t(statusKey)}`);
   };
 
   if (!order) return <div className="flex h-96 items-center justify-center text-muted-foreground">{t('app.loading')}</div>;
+
+  const getStatusLabel = (s: string) => {
+    const key = `status.${s}` as TranslationKey;
+    const val = t(key);
+    return val !== key ? val : s.replace('_', ' ');
+  };
 
   return (
     <div className="max-w-2xl">
@@ -74,7 +82,7 @@ const AdminOrderDetailPage = () => {
           <h1 className="font-display text-2xl font-bold">{order.customer_name}</h1>
           <div className="mt-1 flex items-center gap-2">
             <StatusBadge status={order.status} />
-            <span className="text-sm text-muted-foreground capitalize">{order.order_type}</span>
+            <span className="text-sm text-muted-foreground">{order.order_type === 'delivery' ? t('checkout.delivery') : t('checkout.pickup')}</span>
           </div>
         </div>
         <div className="flex gap-2">
@@ -99,7 +107,7 @@ const AdminOrderDetailPage = () => {
             </SelectTrigger>
             <SelectContent>
               {allStatuses.map(s => (
-                <SelectItem key={s} value={s}>{s.replace('_', ' ')}</SelectItem>
+                <SelectItem key={s} value={s}>{getStatusLabel(s)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -110,7 +118,7 @@ const AdminOrderDetailPage = () => {
       <div className="mt-6 rounded-xl border border-border bg-card p-4 space-y-2 text-sm">
         <div className="flex justify-between"><span className="text-muted-foreground">{t('admin.phone')}</span><span>{order.customer_phone}</span></div>
         {order.delivery_address && <div className="flex justify-between"><span className="text-muted-foreground">{t('admin.address')}</span><span>{order.delivery_address}</span></div>}
-        <div className="flex justify-between"><span className="text-muted-foreground">{t('admin.payment')}</span><span className="capitalize">{order.payment_method}</span></div>
+        <div className="flex justify-between"><span className="text-muted-foreground">{t('admin.payment')}</span><span>{order.payment_method === 'cash' ? t('checkout.cash') : t('checkout.payOnline')}</span></div>
         <div className="flex justify-between"><span className="text-muted-foreground">{t('admin.ordered')}</span><span>{new Date(order.created_at).toLocaleString()}</span></div>
         {order.notes && <div><span className="text-muted-foreground">{t('admin.notes')}: </span><span className="italic">{order.notes}</span></div>}
       </div>
@@ -134,7 +142,7 @@ const AdminOrderDetailPage = () => {
         </div>
         <div className="mt-3 space-y-1 border-t border-border pt-3 text-sm">
           <div className="flex justify-between"><span className="text-muted-foreground">{t('cart.subtotal')}</span><span>{formatCurrency(order.subtotal)}</span></div>
-          {order.delivery_fee > 0 && <div className="flex justify-between"><span className="text-muted-foreground">{t('checkout.delivery')}</span><span>{formatCurrency(order.delivery_fee)}</span></div>}
+          {order.delivery_fee > 0 && <div className="flex justify-between"><span className="text-muted-foreground">{t('checkout.deliveryFee')}</span><span>{formatCurrency(order.delivery_fee)}</span></div>}
           <div className="flex justify-between font-display font-bold text-lg"><span>{t('cart.total')}</span><span className="text-primary">{formatCurrency(order.total)}</span></div>
         </div>
       </div>

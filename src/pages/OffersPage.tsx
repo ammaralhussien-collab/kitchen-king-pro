@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
 import { useI18n } from '@/i18n/I18nProvider';
+import { getLocalizedName, getLocalizedDesc } from '@/lib/localize';
 import { Plus, Clock, Tag } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
@@ -13,7 +14,13 @@ interface OfferItem {
   id: string;
   category_id: string;
   name: string;
+  name_en: string | null;
+  name_de: string | null;
+  name_ar: string | null;
   description: string | null;
+  desc_en: string | null;
+  desc_de: string | null;
+  desc_ar: string | null;
   price: number;
   image_url: string | null;
   is_available: boolean;
@@ -26,7 +33,7 @@ interface OfferItem {
 const OffersPage = () => {
   const [items, setItems] = useState<OfferItem[]>([]);
   const { addItem } = useCart();
-  const { t, formatCurrency } = useI18n();
+  const { t, lang, formatCurrency } = useI18n();
 
   useEffect(() => {
     const fetchOffers = async () => {
@@ -36,23 +43,24 @@ const OffersPage = () => {
         .eq('is_available', true)
         .eq('is_offer', true)
         .order('sort_order');
-      if (data) setItems(data);
+      if (data) setItems(data as any);
     };
     fetchOffers();
   }, []);
 
   const quickAdd = (item: OfferItem) => {
+    const localName = getLocalizedName(item, lang);
     addItem({
       id: crypto.randomUUID(),
       itemId: item.id,
-      name: item.name,
+      name: localName,
       price: item.offer_price ?? item.price,
       quantity: 1,
       addons: [],
       notes: '',
       image_url: item.image_url,
     });
-    toast.success(`${item.name} ${t('item.addedToCart')}`);
+    toast.success(`${localName} ${t('item.addedToCart')}`);
   };
 
   return (
@@ -83,7 +91,7 @@ const OffersPage = () => {
               <Link to={`/item/${item.id}`}>
                 <div className="aspect-[4/3] overflow-hidden bg-muted">
                   {item.image_url ? (
-                    <img src={item.image_url} alt={item.name} className="h-full w-full object-cover transition-transform group-hover:scale-105" />
+                    <img src={item.image_url} alt={getLocalizedName(item, lang)} className="h-full w-full object-cover transition-transform group-hover:scale-105" />
                   ) : (
                     <div className="flex h-full items-center justify-center text-4xl">🍽️</div>
                   )}
@@ -93,9 +101,9 @@ const OffersPage = () => {
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <Link to={`/item/${item.id}`} className="font-display text-lg font-semibold text-foreground hover:text-primary transition-colors">
-                      {item.name}
+                      {getLocalizedName(item, lang)}
                     </Link>
-                    <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{item.description}</p>
+                    <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{getLocalizedDesc(item, lang)}</p>
                   </div>
                   <div className="shrink-0 text-right">
                     <span className="font-display text-lg font-bold text-primary">

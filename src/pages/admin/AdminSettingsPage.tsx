@@ -49,9 +49,9 @@ const AdminSettingsPage = () => {
       if (error) throw error;
       const { data: urlData } = supabase.storage.from('menu-images').getPublicUrl(fileName);
       update('hero_image_url', urlData.publicUrl);
-      toast.success('Hero image uploaded');
+      toast.success(t('admin.heroImage'));
     } catch (err: any) {
-      toast.error('Upload failed: ' + err.message);
+      toast.error(err.message);
     } finally {
       setHeroUploading(false);
     }
@@ -66,9 +66,9 @@ const AdminSettingsPage = () => {
       if (error) throw error;
       const { data: urlData } = supabase.storage.from('menu-images').getPublicUrl(fileName);
       update('logo_url', urlData.publicUrl);
-      toast.success('Logo uploaded');
+      toast.success(t('admin.logo'));
     } catch (err: any) {
-      toast.error('Upload failed: ' + err.message);
+      toast.error(err.message);
     } finally {
       setLogoUploading(false);
     }
@@ -117,63 +117,63 @@ const AdminSettingsPage = () => {
         <div className="space-y-4 rounded-xl border border-border bg-card p-4">
           <h3 className="font-display font-semibold">{t('admin.logo')}</h3>
           <div>
-            <Label>Restaurant Logo</Label>
+            <Label>{t('admin.restaurantLogo')}</Label>
             <div className="mt-1 space-y-2">
               {restaurant.logo_url && (
                 <div className="relative w-20 h-20 rounded-md overflow-hidden border border-border">
-                  <img src={restaurant.logo_url} alt="Logo preview" className="w-full h-full object-contain" />
+                  <img src={restaurant.logo_url} alt="Logo" className="w-full h-full object-contain" />
                 </div>
               )}
               <div className="flex gap-2">
                 <input ref={logoFileRef} type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) handleLogoUpload(e.target.files[0]); }} />
                 <Button type="button" variant="outline" size="sm" disabled={logoUploading} onClick={() => logoFileRef.current?.click()}>
-                  {logoUploading ? 'Uploading…' : <><Upload className="me-1 h-3 w-3" /> Upload</>}
+                  {logoUploading ? t('admin.uploading') : <><Upload className="me-1 h-3 w-3" /> {t('admin.upload')}</>}
                 </Button>
               </div>
               <Input value={restaurant.logo_url || ''} onChange={e => update('logo_url', e.target.value)} placeholder="https://..." />
             </div>
           </div>
           <div>
-            <Label>Logo Height (px)</Label>
+            <Label>{t('admin.logoHeight')}</Label>
             <Input type="number" min={24} max={120} value={restaurant.logo_height_px ?? 44} onChange={e => update('logo_height_px', parseInt(e.target.value) || 44)} />
-            <p className="text-xs text-muted-foreground mt-1">Min 24, Max 120. Default is 44px.</p>
+            <p className="text-xs text-muted-foreground mt-1">{t('admin.logoHeightHint')}</p>
           </div>
         </div>
 
         <div className="space-y-4 rounded-xl border border-border bg-card p-4">
           <h3 className="font-display font-semibold">{t('admin.general')}</h3>
-          <div><Label>Restaurant Name</Label><Input value={restaurant.name} onChange={e => update('name', e.target.value)} /></div>
-          <div><Label>Description</Label><Input value={restaurant.description || ''} onChange={e => update('description', e.target.value)} /></div>
+          <div><Label>{t('admin.restaurantName')}</Label><Input value={restaurant.name} onChange={e => update('name', e.target.value)} /></div>
+          <div><Label>{t('admin.description')}</Label><Input value={restaurant.description || ''} onChange={e => update('description', e.target.value)} /></div>
           <div><Label>{t('admin.phone')}</Label><Input value={restaurant.phone || ''} onChange={e => update('phone', e.target.value)} /></div>
           <div><Label>{t('admin.address')}</Label><Input value={restaurant.address || ''} onChange={e => update('address', e.target.value)} /></div>
         </div>
 
         <div className="space-y-4 rounded-xl border border-border bg-card p-4">
           <h3 className="font-display font-semibold">{t('admin.deliverySettings')}</h3>
-          <div><Label>Delivery Radius (km)</Label><Input type="number" value={restaurant.delivery_radius_km} onChange={e => update('delivery_radius_km', parseFloat(e.target.value))} /></div>
-          <div><Label>Delivery Fee</Label><Input type="number" step="0.01" value={restaurant.delivery_fee} onChange={e => update('delivery_fee', parseFloat(e.target.value))} /></div>
-          <div><Label>Minimum Order</Label><Input type="number" step="0.01" value={restaurant.minimum_order} onChange={e => update('minimum_order', parseFloat(e.target.value))} /></div>
+          <div><Label>{t('admin.deliveryRadius')}</Label><Input type="number" value={restaurant.delivery_radius_km} onChange={e => update('delivery_radius_km', parseFloat(e.target.value))} /></div>
+          <div><Label>{t('admin.deliveryFeeLabel')}</Label><Input type="number" step="0.01" value={restaurant.delivery_fee} onChange={e => update('delivery_fee', parseFloat(e.target.value))} /></div>
+          <div><Label>{t('admin.minimumOrder')}</Label><Input type="number" step="0.01" value={restaurant.minimum_order} onChange={e => update('minimum_order', parseFloat(e.target.value))} /></div>
         </div>
 
         <div className="space-y-4 rounded-xl border border-border bg-card p-4">
           <h3 className="font-display font-semibold">{t('admin.heroSection')}</h3>
-          <div><Label>Hero Title</Label><Input value={restaurant.hero_title || ''} onChange={e => update('hero_title', e.target.value)} placeholder={t('hero.title')} /></div>
-          <div><Label>Hero Subtitle</Label><Input value={restaurant.hero_subtitle || ''} onChange={e => update('hero_subtitle', e.target.value)} placeholder={t('hero.subtitle')} /></div>
+          <div><Label>{t('admin.heroTitle')}</Label><Input value={restaurant.hero_title || ''} onChange={e => update('hero_title', e.target.value)} placeholder={t('hero.title')} /></div>
+          <div><Label>{t('admin.heroSubtitle')}</Label><Input value={restaurant.hero_subtitle || ''} onChange={e => update('hero_subtitle', e.target.value)} placeholder={t('hero.subtitle')} /></div>
           <div>
-            <Label>Hero Image</Label>
+            <Label>{t('admin.heroImage')}</Label>
             <div className="mt-1 space-y-2">
               {restaurant.hero_image_url && (
                 <div className="relative w-full h-32 rounded-md overflow-hidden border border-border">
-                  <img src={restaurant.hero_image_url} alt="Hero preview" className="w-full h-full object-cover" />
+                  <img src={restaurant.hero_image_url} alt="Hero" className="w-full h-full object-cover" />
                 </div>
               )}
               <div className="flex gap-2">
                 <input ref={heroFileRef} type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) handleHeroUpload(e.target.files[0]); }} />
                 <Button type="button" variant="outline" size="sm" disabled={heroUploading} onClick={() => heroFileRef.current?.click()}>
-                  {heroUploading ? 'Uploading…' : <><Upload className="me-1 h-3 w-3" /> Upload</>}
+                  {heroUploading ? t('admin.uploading') : <><Upload className="me-1 h-3 w-3" /> {t('admin.upload')}</>}
                 </Button>
                 {!restaurant.hero_image_url && (
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground"><ImageIcon className="h-3 w-3" /> Or paste URL below</div>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground"><ImageIcon className="h-3 w-3" /> {t('admin.orPasteUrl')}</div>
                 )}
               </div>
               <Input value={restaurant.hero_image_url || ''} onChange={e => update('hero_image_url', e.target.value)} placeholder="https://..." />
