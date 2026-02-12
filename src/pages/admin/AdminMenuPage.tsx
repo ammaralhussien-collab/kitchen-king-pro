@@ -266,9 +266,12 @@ const AdminMenuPage = () => {
               {item.image_url && (
                 <img src={item.image_url} alt={item.name} className="h-10 w-10 rounded object-cover" />
               )}
-              <div>
+              <div className="flex items-center gap-2">
                 <span className="font-medium">{item.name}</span>
-                <span className="ml-2 text-sm text-primary font-semibold">${item.price.toFixed(2)}</span>
+                {item.is_offer && (
+                  <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold text-accent-foreground">Offer</span>
+                )}
+                <span className="text-sm text-primary font-semibold">${item.price.toFixed(2)}</span>
               </div>
             </div>
             <div className="flex items-center gap-2">
