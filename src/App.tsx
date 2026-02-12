@@ -20,7 +20,6 @@ import AdminMenuPage from "@/pages/admin/AdminMenuPage";
 import AdminSettingsPage from "@/pages/admin/AdminSettingsPage";
 import OffersPage from "@/pages/OffersPage";
 import NotFound from "./pages/NotFound";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +29,10 @@ const App = () => (
       <AuthProvider>
         <CartProvider>
           <TooltipProvider>
+            <div className="fixed top-4 right-4 z-50">
+              <LanguageSwitcher />
+            </div>
+
             <Toaster />
             <Sonner />
             <BrowserRouter>
