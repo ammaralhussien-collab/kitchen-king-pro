@@ -29,10 +29,6 @@ const App = () => (
       <AuthProvider>
         <CartProvider>
           <TooltipProvider>
-            <div className="fixed top-4 right-4 z-50">
-              <LanguageSwitcher />
-            </div>
-
             <Toaster />
             <Sonner />
             <BrowserRouter>
