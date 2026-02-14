@@ -1,24 +1,23 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/i18n/I18nProvider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from 'sonner';
-import { Truck, Store } from 'lucide-react';
-import { buildWhatsAppMessage, buildWhatsAppUrl, isValidE164, type WhatsAppOrderData } from '@/lib/whatsapp';
+import { Truck, Store, Banknote, CreditCard, LogIn } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
   const { items, subtotal, clearCart } = useCart();
+  const { user, loading: authLoading } = useAuth();
   const { t, formatCurrency } = useI18n();
   const [restaurantId, setRestaurantId] = useState('');
-  const [restaurantName, setRestaurantName] = useState('');
-  const [restaurantPhone, setRestaurantPhone] = useState('');
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [loading, setLoading] = useState(false);
 
@@ -27,28 +26,41 @@ const CheckoutPage = () => {
     phone: '',
     orderType: 'pickup' as 'delivery' | 'pickup',
     address: '',
-    paymentMethod: 'cash' as 'cash' | 'online',
-    scheduledTime: '',
+    paymentMethod: 'cash_on_delivery' as string,
     notes: '',
   });
 
   useEffect(() => {
-    supabase.from('restaurants').select('id, name, phone, delivery_fee').limit(1).single().then(({ data }) => {
+    supabase.from('restaurants').select('id, delivery_fee').limit(1).single().then(({ data }) => {
       if (data) {
         setRestaurantId(data.id);
-        setRestaurantName(data.name);
-        setRestaurantPhone(data.phone || '');
         setDeliveryFee(Number(data.delivery_fee) || 0);
       }
     });
   }, []);
 
-  if (items.length === 0) {
+  if (items.length === 0 && !authLoading) {
     navigate('/cart');
     return null;
   }
 
   const total = subtotal + (form.orderType === 'delivery' ? deliveryFee : 0);
+
+  // Auth guard
+  if (!authLoading && !user) {
+    return (
+      <div className="container max-w-md py-16 text-center">
+        <LogIn className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+        <h2 className="font-display text-xl font-bold">{t('checkout.loginRequired')}</h2>
+        <p className="mt-2 text-muted-foreground">{t('checkout.loginHint')}</p>
+        <Link to="/auth">
+          <Button className="mt-6">{t('checkout.loginButton')}</Button>
+        </Link>
+      </div>
+    );
+  }
+
+  const validatePhone = (phone: string) => /^\+?[\d\s\-()]{7,}$/.test(phone.trim());
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,36 +68,56 @@ const CheckoutPage = () => {
       toast.error(t('checkout.fillRequired'));
       return;
     }
+    if (!validatePhone(form.phone)) {
+      toast.error(t('checkout.invalidPhone'));
+      return;
+    }
     if (form.orderType === 'delivery' && !form.address.trim()) {
       toast.error(t('checkout.enterAddress'));
+      return;
+    }
+    if (total <= 0) {
+      toast.error(t('checkout.zeroTotal'));
       return;
     }
 
     setLoading(true);
     try {
-       const { data: { session } } = await supabase.auth.getSession();
-       const userId = session?.user?.id || '00000000-0000-0000-0000-000000000000';
-       
-       const { data: order, error: orderErr } = await supabase
-         .from('orders')
-         .insert({
-           restaurant_id: restaurantId,
-           user_id: userId,
-           order_type: form.orderType,
-           payment_method: form.paymentMethod,
-           customer_name: form.name.trim(),
-           customer_phone: form.phone.trim(),
-           delivery_address: form.orderType === 'delivery' ? form.address.trim() : null,
-           scheduled_time: form.scheduledTime || null,
-           subtotal,
-           delivery_fee: form.orderType === 'delivery' ? deliveryFee : 0,
-           total,
-           notes: form.notes || null,
-         })
-         .select('id')
-         .single();
+      // Build items snapshot
+      const itemsSnapshot = items.map(ci => ({
+        itemId: ci.itemId,
+        name: ci.name,
+        price: ci.price,
+        quantity: ci.quantity,
+        addons: ci.addons,
+        notes: ci.notes,
+        total: (ci.price + ci.addons.reduce((s, a) => s + a.price, 0)) * ci.quantity,
+      }));
 
-       if (orderErr) throw orderErr;
+      const { data: order, error: orderErr } = await supabase
+        .from('orders')
+        .insert({
+          restaurant_id: restaurantId,
+          user_id: user!.id,
+          order_type: form.orderType,
+          payment_method: 'cash' as any, // DB enum value
+          customer_name: form.name.trim(),
+          customer_phone: form.phone.trim(),
+          delivery_address: form.orderType === 'delivery' ? form.address.trim() : null,
+          subtotal,
+          delivery_fee: form.orderType === 'delivery' ? deliveryFee : 0,
+          total,
+          notes: form.notes || null,
+          status: 'received' as any,
+          payment_status: 'unpaid',
+          currency: 'EUR',
+          items_snapshot: itemsSnapshot as any,
+          source: 'web',
+        })
+        .select('id')
+        .single();
+
+      if (orderErr) throw orderErr;
 
       const orderItems = items.map(cartItem => ({
         order_id: order.id,
@@ -103,42 +135,13 @@ const CheckoutPage = () => {
 
       await supabase.from('payments').insert({
         order_id: order.id,
-        method: form.paymentMethod,
+        method: 'cash' as any,
         amount: total,
-        status: form.paymentMethod === 'cash' ? 'pending' : 'pending',
+        status: 'pending',
       });
 
-      // Build and open WhatsApp message
-      if (restaurantPhone && isValidE164(restaurantPhone)) {
-        const waData: WhatsAppOrderData = {
-          orderId: order.id,
-          restaurantName,
-          orderType: form.orderType,
-          scheduledTime: form.scheduledTime || null,
-          customerName: form.name.trim(),
-          customerPhone: form.phone.trim(),
-          deliveryAddress: form.orderType === 'delivery' ? form.address.trim() : null,
-          items: orderItems.map((oi, idx) => ({
-            name: oi.item_name,
-            quantity: oi.quantity,
-            unitPrice: oi.unit_price,
-            addons: (items[idx]?.addons || []).map(a => ({ name: a.name, price: a.price })),
-            notes: oi.notes,
-            total: oi.total,
-          })),
-          subtotal,
-          deliveryFee: form.orderType === 'delivery' ? deliveryFee : 0,
-          total,
-          paymentMethod: form.paymentMethod,
-        };
-        const waUrl = buildWhatsAppUrl(restaurantPhone, buildWhatsAppMessage(waData));
-        window.open(waUrl, '_blank');
-      } else if (restaurantPhone && !isValidE164(restaurantPhone)) {
-        toast.error(t('error.phoneNotE164'));
-      }
-
       clearCart();
-      toast.success(t('checkout.orderSuccess'));
+      toast.success(t('checkout.codSuccess'));
       navigate(`/order/${order.id}`);
     } catch (err: any) {
       toast.error(err.message || t('error.orderFailed'));
@@ -192,25 +195,36 @@ const CheckoutPage = () => {
           </div>
         )}
 
-        {/* Schedule */}
-        <div className="space-y-3">
-          <Label className="font-display text-lg font-semibold">{t('checkout.when')}</Label>
-          <RadioGroup value={form.scheduledTime ? 'scheduled' : 'asap'} onValueChange={v => v === 'asap' && update('scheduledTime', '')}>
-            <div className="flex items-center gap-2"><RadioGroupItem value="asap" id="asap" /><Label htmlFor="asap">{t('checkout.asap')}</Label></div>
-            <div className="flex items-center gap-2"><RadioGroupItem value="scheduled" id="scheduled" /><Label htmlFor="scheduled">{t('checkout.schedule')}</Label></div>
-          </RadioGroup>
-          {form.scheduledTime !== '' && form.scheduledTime !== undefined && (
-            <Input type="datetime-local" value={form.scheduledTime} onChange={e => update('scheduledTime', e.target.value)} />
-          )}
-        </div>
-
-        {/* Payment */}
+        {/* Payment Method */}
         <div className="space-y-3">
           <Label className="font-display text-lg font-semibold">{t('checkout.paymentMethod')}</Label>
-          <RadioGroup value={form.paymentMethod} onValueChange={v => update('paymentMethod', v)}>
-            <div className="flex items-center gap-2"><RadioGroupItem value="cash" id="cash" /><Label htmlFor="cash">{t('checkout.cash')} {t('checkout.cashOn')} {form.orderType === 'delivery' ? t('checkout.delivery').toLowerCase() : t('checkout.pickup').toLowerCase()}</Label></div>
-            <div className="flex items-center gap-2"><RadioGroupItem value="online" id="online" /><Label htmlFor="online">{t('checkout.payOnline')}</Label></div>
-          </RadioGroup>
+          <div className="grid grid-cols-2 gap-3">
+            {/* COD - active */}
+            <button
+              type="button"
+              onClick={() => update('paymentMethod', 'cash_on_delivery')}
+              className={`flex items-center justify-center gap-2 rounded-xl border-2 p-4 font-medium transition-colors ${
+                form.paymentMethod === 'cash_on_delivery' ? 'border-primary bg-primary/5 text-primary' : 'border-border text-muted-foreground hover:border-primary/30'
+              }`}
+            >
+              <Banknote className="h-5 w-5" />
+              {t('checkout.payOnDelivery')}
+            </button>
+            {/* Online - disabled */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  disabled
+                  className="flex items-center justify-center gap-2 rounded-xl border-2 border-border p-4 font-medium text-muted-foreground/50 cursor-not-allowed"
+                >
+                  <CreditCard className="h-5 w-5" />
+                  {t('checkout.payOnlineComingSoon')}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>{t('checkout.onlinePaymentSoon')}</TooltipContent>
+            </Tooltip>
+          </div>
         </div>
 
         {/* Notes */}

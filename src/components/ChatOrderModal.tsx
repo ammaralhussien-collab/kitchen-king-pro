@@ -166,12 +166,31 @@ export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () =
   };
 
   const handleConfirm = async () => {
+    // Validate
+    if (!phone.trim() || !/^\+?[\d\s\-()]{7,}$/.test(phone.trim())) {
+      addMsg('bot', t('checkout.invalidPhone'));
+      return;
+    }
+    if (orderType === 'delivery' && !address.trim()) {
+      addMsg('bot', t('checkout.enterAddress'));
+      return;
+    }
+    const chatTotal = subtotal + (orderType === 'delivery' ? deliveryFee : 0);
+    if (chatTotal <= 0) {
+      addMsg('bot', t('checkout.zeroTotal'));
+      return;
+    }
+
     setLoading(true);
     try {
       // Check if user is authenticated
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        addMsg('bot', 'Please log in to place an order.');
+        addMsg('bot', t('chat.loginRequired'), (
+          <Button size="sm" className="mt-2" onClick={() => { onClose(); navigate('/auth'); }}>
+            {t('chat.loginButton')}
+          </Button>
+        ));
         setLoading(false);
         return;
       }
@@ -195,6 +214,7 @@ export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () =
       const data = res.data;
       setOrderId(data.order_id);
       setStep('confirmed');
+      addMsg('bot', t('checkout.codSuccess'));
       addMsg('bot', `${t('chat.orderConfirmed')} #${data.order_id.slice(0, 8).toUpperCase()}`);
     } catch {
       addMsg('bot', t('chat.orderError'));
