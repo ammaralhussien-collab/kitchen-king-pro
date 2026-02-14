@@ -39,21 +39,20 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
 
-    // Verify the token
-    const authClient = createClient(supabaseUrl, supabaseAnonKey)
-    const { data: claimsData, error: claimsErr } = await authClient.auth.getClaims(token)
-    if (claimsErr || !claimsData?.claims) {
+    // Create a client that acts AS the authenticated user (respects RLS)
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    })
+
+    // Verify the token by fetching the user
+    const { data: { user }, error: userErr } = await supabase.auth.getUser()
+    if (userErr || !user) {
       return new Response(JSON.stringify({ error: 'Unauthorized: Invalid token' }), {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    const userId = claimsData.claims.sub
-
-    // Create a client that acts AS the authenticated user (respects RLS)
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    })
+    const userId = user.id
 
     const body: ChatOrderInput = await req.json()
 
