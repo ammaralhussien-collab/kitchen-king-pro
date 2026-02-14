@@ -286,7 +286,7 @@ export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () =
             {step === 'contact' && (
               <div className="space-y-2 pt-1">
                 <Input placeholder={t('chat.name')} value={name} onChange={e => setName(e.target.value)} />
-                <Input placeholder={t('chat.phoneNumber')} type="tel" value={phone} onChange={e => setPhone(e.target.value)} />
+                <Input placeholder={t('chat.phoneNumber')} type="tel" value={phone} onChange={e => setPhone(e.target.value.replace(/[^0-9]/g, ''))} pattern="[0-9]*" inputMode="numeric" />
                 <Button onClick={handleContact} className="w-full" size="sm" disabled={!name.trim() || !phone.trim()}>
                   <Send className="me-1 h-3 w-3" /> {t('chat.continue')}
                 </Button>
