@@ -168,6 +168,14 @@ export const ChatOrderModal = ({ open, onClose }: { open: boolean; onClose: () =
   const handleConfirm = async () => {
     setLoading(true);
     try {
+      // Check if user is authenticated
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        addMsg('bot', 'Please log in to place an order.');
+        setLoading(false);
+        return;
+      }
+
       const res = await supabase.functions.invoke('create-chat-order', {
         body: {
           order_type: orderType,
