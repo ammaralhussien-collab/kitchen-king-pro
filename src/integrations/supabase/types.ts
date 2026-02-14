@@ -235,12 +235,15 @@ export type Database = {
       }
       orders: {
         Row: {
+          assigned_driver_id: string | null
           created_at: string | null
           currency: string
           customer_name: string
           customer_phone: string
+          delivered_at: string | null
           delivery_address: string | null
           delivery_fee: number
+          delivery_status: string
           id: string
           items_snapshot: Json | null
           notes: string | null
@@ -258,12 +261,15 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          assigned_driver_id?: string | null
           created_at?: string | null
           currency?: string
           customer_name: string
           customer_phone: string
+          delivered_at?: string | null
           delivery_address?: string | null
           delivery_fee?: number
+          delivery_status?: string
           id?: string
           items_snapshot?: Json | null
           notes?: string | null
@@ -281,12 +287,15 @@ export type Database = {
           user_id: string
         }
         Update: {
+          assigned_driver_id?: string | null
           created_at?: string | null
           currency?: string
           customer_name?: string
           customer_phone?: string
+          delivered_at?: string | null
           delivery_address?: string | null
           delivery_fee?: number
+          delivery_status?: string
           id?: string
           items_snapshot?: Json | null
           notes?: string | null
