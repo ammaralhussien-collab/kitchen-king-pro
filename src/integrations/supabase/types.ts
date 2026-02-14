@@ -236,18 +236,22 @@ export type Database = {
       orders: {
         Row: {
           created_at: string | null
+          currency: string
           customer_name: string
           customer_phone: string
           delivery_address: string | null
           delivery_fee: number
           id: string
+          items_snapshot: Json | null
           notes: string | null
           order_type: Database["public"]["Enums"]["order_type"]
           payment_method: Database["public"]["Enums"]["payment_method"]
+          payment_status: string
           restaurant_id: string
           scheduled_time: string | null
           source: string
           status: Database["public"]["Enums"]["order_status"]
+          stripe_payment_intent_id: string | null
           subtotal: number
           total: number
           updated_at: string | null
@@ -255,18 +259,22 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          currency?: string
           customer_name: string
           customer_phone: string
           delivery_address?: string | null
           delivery_fee?: number
           id?: string
+          items_snapshot?: Json | null
           notes?: string | null
           order_type: Database["public"]["Enums"]["order_type"]
           payment_method?: Database["public"]["Enums"]["payment_method"]
+          payment_status?: string
           restaurant_id: string
           scheduled_time?: string | null
           source?: string
           status?: Database["public"]["Enums"]["order_status"]
+          stripe_payment_intent_id?: string | null
           subtotal?: number
           total?: number
           updated_at?: string | null
@@ -274,18 +282,22 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          currency?: string
           customer_name?: string
           customer_phone?: string
           delivery_address?: string | null
           delivery_fee?: number
           id?: string
+          items_snapshot?: Json | null
           notes?: string | null
           order_type?: Database["public"]["Enums"]["order_type"]
           payment_method?: Database["public"]["Enums"]["payment_method"]
+          payment_status?: string
           restaurant_id?: string
           scheduled_time?: string | null
           source?: string
           status?: Database["public"]["Enums"]["order_status"]
+          stripe_payment_intent_id?: string | null
           subtotal?: number
           total?: number
           updated_at?: string | null
@@ -437,8 +449,9 @@ export type Database = {
         | "out_for_delivery"
         | "completed"
         | "canceled"
+        | "confirmed"
       order_type: "delivery" | "pickup"
-      payment_method: "cash" | "online"
+      payment_method: "cash" | "online" | "cash_on_delivery"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -575,9 +588,10 @@ export const Constants = {
         "out_for_delivery",
         "completed",
         "canceled",
+        "confirmed",
       ],
       order_type: ["delivery", "pickup"],
-      payment_method: ["cash", "online"],
+      payment_method: ["cash", "online", "cash_on_delivery"],
     },
   },
 } as const

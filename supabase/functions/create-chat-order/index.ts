@@ -27,7 +27,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Validate JWT and create authenticated client (no service role key)
     const authHeader = req.headers.get('Authorization')
     if (!authHeader?.startsWith('Bearer ')) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -35,16 +34,13 @@ Deno.serve(async (req) => {
       })
     }
 
-    const token = authHeader.replace('Bearer ', '')
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
 
-    // Create a client that acts AS the authenticated user (respects RLS)
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     })
 
-    // Verify the token by fetching the user
     const { data: { user }, error: userErr } = await supabase.auth.getUser()
     if (userErr || !user) {
       return new Response(JSON.stringify({ error: 'Unauthorized: Invalid token' }), {
@@ -53,12 +49,16 @@ Deno.serve(async (req) => {
     }
 
     const userId = user.id
-
     const body: ChatOrderInput = await req.json()
 
     // Validate required fields
     if (!body.customer_name?.trim() || !body.customer_phone?.trim()) {
       return new Response(JSON.stringify({ error: 'Name and phone are required' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+    if (!/^\+?[\d\s\-()]{7,}$/.test(body.customer_phone.trim())) {
+      return new Response(JSON.stringify({ error: 'Invalid phone number' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Fetch item prices from DB (public read via RLS)
+    // Fetch item prices
     const itemIds = body.items.map(i => i.item_id)
     const { data: dbItems, error: itemsErr } = await supabase
       .from('items')
@@ -102,7 +102,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Fetch addons (public read via RLS)
+    // Fetch addons
     const allAddonIds = body.items.flatMap(i => i.addon_ids)
     let addonMap = new Map<string, { id: string; name: string; price: number }>()
     if (allAddonIds.length > 0) {
@@ -116,7 +116,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Fetch restaurant (public read via RLS)
+    // Fetch restaurant
     const { data: restaurant } = await supabase
       .from('restaurants')
       .select('id, delivery_fee')
@@ -155,7 +155,25 @@ Deno.serve(async (req) => {
     const deliveryFee = body.order_type === 'delivery' ? (Number(restaurant.delivery_fee) || 0) : 0
     const total = subtotal + deliveryFee
 
-    // Create order as the authenticated user (RLS enforces user_id = auth.uid())
+    // Prevent zero-total orders
+    if (total <= 0) {
+      return new Response(JSON.stringify({ error: 'Order total must be greater than zero' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // Build items snapshot
+    const itemsSnapshot = orderItemsData.map(oi => ({
+      itemId: oi.item_id,
+      name: oi.item_name,
+      price: oi.unit_price,
+      quantity: oi.quantity,
+      addons: oi.addons,
+      notes: oi.notes,
+      total: oi.total,
+    }))
+
+    // Create order
     const { data: order, error: orderErr } = await supabase
       .from('orders')
       .insert({
@@ -172,6 +190,9 @@ Deno.serve(async (req) => {
         notes: body.notes || null,
         status: 'received',
         source: 'chat',
+        payment_status: 'unpaid',
+        currency: 'EUR',
+        items_snapshot: itemsSnapshot,
       })
       .select('id')
       .single()
@@ -183,7 +204,7 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Insert order items (RLS checks order ownership)
+    // Insert order items
     const { error: oiErr } = await supabase
       .from('order_items')
       .insert(orderItemsData.map(oi => ({ ...oi, order_id: order.id })))
@@ -195,7 +216,7 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Create payment record (RLS checks order ownership)
+    // Create payment record
     await supabase.from('payments').insert({
       order_id: order.id,
       method: 'cash',

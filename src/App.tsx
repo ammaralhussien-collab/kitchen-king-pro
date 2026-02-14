@@ -15,6 +15,8 @@ import AuthPage from "@/pages/AuthPage";
 import AdminMenuPage from "@/pages/admin/AdminMenuPage";
 import AdminSettingsPage from "@/pages/admin/AdminSettingsPage";
 import OffersPage from "@/pages/OffersPage";
+import CheckoutPage from "@/pages/CheckoutPage";
+import OrderStatusPage from "@/pages/OrderStatusPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +37,8 @@ const App = () => (
                   <Route path="/offers" element={<OffersPage />} />
                   <Route path="/item/:id" element={<ItemDetailPage />} />
                   <Route path="/cart" element={<CartPage />} />
+                  <Route path="/checkout" element={<CheckoutPage />} />
+                  <Route path="/order/:id" element={<OrderStatusPage />} />
                 </Route>
                 <Route path="/auth" element={<AuthPage />} />
                 <Route element={<AdminLayout />}>
