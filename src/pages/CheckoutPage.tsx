@@ -184,7 +184,7 @@ const CheckoutPage = () => {
         <div className="space-y-3">
           <Label className="font-display text-lg font-semibold">{t('checkout.contactInfo')}</Label>
           <Input placeholder={t('checkout.name')} value={form.name} onChange={e => update('name', e.target.value)} required />
-          <Input placeholder={t('checkout.phone')} type="tel" value={form.phone} onChange={e => update('phone', e.target.value)} required />
+          <Input placeholder={t('checkout.phone')} type="tel" value={form.phone} onChange={e => update('phone', e.target.value.replace(/[^0-9]/g, ''))} pattern="[0-9]*" inputMode="numeric" required />
         </div>
 
         {/* Delivery address */}
