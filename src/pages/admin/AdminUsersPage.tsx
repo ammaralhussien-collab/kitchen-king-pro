@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { Users, Search } from 'lucide-react';
+import CreateDriverModal from '@/components/CreateDriverModal';
 
 interface ManagedUser {
   id: string;
@@ -137,9 +138,12 @@ const AdminUsersPage = () => {
 
   return (
     <div>
-      <div className="mb-6 flex items-center gap-3">
-        <Users className="h-6 w-6 text-primary" />
-        <h1 className="font-display text-2xl font-bold">إدارة المستخدمين</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Users className="h-6 w-6 text-primary" />
+          <h1 className="font-display text-2xl font-bold">إدارة المستخدمين</h1>
+        </div>
+        <CreateDriverModal onCreated={() => fetchUsers(search)} />
       </div>
 
       <div className="relative mb-4">
