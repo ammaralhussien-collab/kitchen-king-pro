@@ -14,6 +14,8 @@ import CartPage from "@/pages/CartPage";
 import AuthPage from "@/pages/AuthPage";
 import AdminMenuPage from "@/pages/admin/AdminMenuPage";
 import AdminSettingsPage from "@/pages/admin/AdminSettingsPage";
+import DispatchPage from "@/pages/admin/DispatchPage";
+import DriverPage from "@/pages/DriverPage";
 import OffersPage from "@/pages/OffersPage";
 import CheckoutPage from "@/pages/CheckoutPage";
 import OrderStatusPage from "@/pages/OrderStatusPage";
@@ -44,7 +46,9 @@ const App = () => (
                 <Route element={<AdminLayout />}>
                   <Route path="/admin/menu" element={<AdminMenuPage />} />
                   <Route path="/admin/settings" element={<AdminSettingsPage />} />
+                  <Route path="/admin/dispatch" element={<DispatchPage />} />
                 </Route>
+                <Route path="/driver" element={<DriverPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
