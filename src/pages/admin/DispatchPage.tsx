@@ -52,13 +52,23 @@ const DispatchPage = () => {
   };
 
   const fetchDrivers = async () => {
-    const { data } = await supabase
+    const { data: roleData } = await supabase
       .from('user_roles')
       .select('user_id')
       .eq('role', 'driver');
-    if (data) {
-      // We only have user_id from user_roles; display shortened ID as label
-      setDrivers(data.map(d => ({ user_id: d.user_id, email: d.user_id.slice(0, 8) })));
+    if (roleData && roleData.length > 0) {
+      const driverIds = roleData.map(d => d.user_id);
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, phone')
+        .in('user_id', driverIds);
+      const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
+      setDrivers(driverIds.map(id => {
+        const p = profileMap.get(id);
+        return { user_id: id, email: p?.full_name || id.slice(0, 8) };
+      }));
+    } else {
+      setDrivers([]);
     }
   };
 

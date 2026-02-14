@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation, Navigate, useNavigate } from 'react-router-dom';
-import { UtensilsCrossed, Settings, ChefHat, Truck } from 'lucide-react';
+import { UtensilsCrossed, Settings, ChefHat, Truck, Users } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/i18n/I18nProvider';
 import { cn } from '@/lib/utils';
@@ -33,6 +33,7 @@ const AdminLayout = () => {
   const navItems = [
     { to: '/admin/menu', label: t('admin.menu'), icon: ChefHat },
     { to: '/admin/dispatch', label: 'Dispatch', icon: Truck },
+    { to: '/admin/users', label: 'Users', icon: Users },
     { to: '/admin/settings', label: t('admin.settings'), icon: Settings },
   ];
 
