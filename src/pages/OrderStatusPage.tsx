@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useI18n } from '@/i18n/I18nProvider';
 import StatusBadge from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
-import { Check, Clock, MessageCircle } from 'lucide-react';
+import { Check, Clock, MessageCircle, User, Phone } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { buildWhatsAppMessage, buildWhatsAppUrl, isValidE164, type WhatsAppOrderData } from '@/lib/whatsapp';
 import type { TranslationKey } from '@/i18n/translations';
@@ -43,12 +43,19 @@ interface RestaurantInfo {
   phone: string | null;
 }
 
+interface DriverProfile {
+  full_name: string | null;
+  phone: string | null;
+}
+
 const OrderStatusPage = () => {
   const { id } = useParams<{ id: string }>();
   const { t, formatCurrency } = useI18n();
   const [order, setOrder] = useState<Order | null>(null);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [restaurant, setRestaurant] = useState<RestaurantInfo | null>(null);
+  const [driver, setDriver] = useState<DriverProfile | null>(null);
+  const [driverLoaded, setDriverLoaded] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -59,8 +66,20 @@ const OrderStatusPage = () => {
       ]);
       if (orderRes.data) {
         setOrder(orderRes.data as any);
-        const { data: rest } = await supabase.from('restaurants').select('name, phone').eq('id', (orderRes.data as any).restaurant_id).single();
+        const orderData = orderRes.data as any;
+        const { data: rest } = await supabase.from('restaurants').select('name, phone').eq('id', orderData.restaurant_id).single();
         if (rest) setRestaurant(rest);
+
+        // Fetch driver profile if assigned
+        if (orderData.assigned_driver_id) {
+          const { data: driverData } = await supabase
+            .from('profiles')
+            .select('full_name, phone')
+            .eq('user_id', orderData.assigned_driver_id)
+            .single();
+          if (driverData) setDriver(driverData);
+        }
+        setDriverLoaded(true);
       }
       if (itemsRes.data) setOrderItems(itemsRes.data as any);
     };
@@ -68,8 +87,19 @@ const OrderStatusPage = () => {
 
     const channel = supabase
       .channel(`order-${id}`)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${id}` }, (payload) => {
-        setOrder(prev => prev ? { ...prev, ...payload.new } as any : null);
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${id}` }, async (payload) => {
+        const newData = payload.new as any;
+        setOrder(prev => prev ? { ...prev, ...newData } as any : null);
+        // Refetch driver if assigned_driver_id changed
+        if (newData.assigned_driver_id) {
+          const { data: driverData } = await supabase
+            .from('profiles')
+            .select('full_name, phone')
+            .eq('user_id', newData.assigned_driver_id)
+            .single();
+          if (driverData) setDriver(driverData);
+          setDriverLoaded(true);
+        }
       })
       .subscribe();
 
@@ -147,7 +177,31 @@ const OrderStatusPage = () => {
         </div>
       </div>
 
-      {/* WhatsApp button */}
+      {/* Driver info */}
+      {order.order_type === 'delivery' && driverLoaded && (
+        <div className="mt-4 rounded-xl border border-border bg-card p-4">
+          <h3 className="font-display font-semibold">السائق</h3>
+          {driver ? (
+            <div className="mt-3 space-y-2">
+              <div className="flex items-center gap-2 text-sm">
+                <User className="h-4 w-4 text-muted-foreground" />
+                <span className="text-muted-foreground">اسم السائق:</span>
+                <span className="font-medium">{driver.full_name || '—'}</span>
+              </div>
+              {driver.phone && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Phone className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">رقم السائق:</span>
+                  <a href={`tel:${driver.phone}`} className="font-medium text-primary underline">{driver.phone}</a>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="mt-3 text-sm text-muted-foreground">لسه ما تم تعيين سائق</p>
+          )}
+        </div>
+      )}
+
       {restaurant?.phone && isValidE164(restaurant.phone) && (
         <div className="mt-4 flex justify-center">
           <Button
