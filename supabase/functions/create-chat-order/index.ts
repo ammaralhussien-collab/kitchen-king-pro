@@ -50,15 +50,16 @@ Deno.serve(async (req) => {
 
     const userId = user.id
 
-    // Rate limit: max 5 orders per minute per user
+    // Rate limit: insert tracking row then count recent
+    await supabase.from('order_rate_limits').insert({ user_id: userId })
     const oneMinuteAgo = new Date(Date.now() - 60_000).toISOString()
     const { count: recentCount, error: rlErr } = await supabase
-      .from('orders')
+      .from('order_rate_limits')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', userId)
       .gte('created_at', oneMinuteAgo)
-    if (!rlErr && (recentCount ?? 0) >= 5) {
-      return new Response(JSON.stringify({ error: 'Too many orders. Please wait a moment.' }), {
+    if (!rlErr && (recentCount ?? 0) > 5) {
+      return new Response(JSON.stringify({ error: 'Too many requests. Please wait a moment.' }), {
         status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }

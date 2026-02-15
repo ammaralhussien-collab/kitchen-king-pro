@@ -233,6 +233,24 @@ export type Database = {
           },
         ]
       }
+      order_rate_limits: {
+        Row: {
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           assigned_driver_id: string | null
