@@ -22,6 +22,7 @@ interface CreateOrderInput {
   delivery_address?: string
   notes?: string
   items: OrderItemInput[]
+  idempotency_key?: string
 }
 
 Deno.serve(async (req) => {
@@ -53,6 +54,17 @@ Deno.serve(async (req) => {
     if ((recentCount ?? 0) > 5) return json({ error: 'Too many requests' }, 429)
 
     const body: CreateOrderInput = await req.json()
+
+    // Idempotency check
+    if (body.idempotency_key?.trim()) {
+      const { data: existing } = await supabase
+        .from('orders')
+        .select('id, subtotal, delivery_fee, total')
+        .eq('idempotency_key', body.idempotency_key.trim())
+        .eq('user_id', userId)
+        .maybeSingle()
+      if (existing) return json({ order_id: existing.id, subtotal: existing.subtotal, delivery_fee: existing.delivery_fee, total: existing.total, deduplicated: true })
+    }
 
     // Validate fields
     if (!body.customer_name?.trim() || !body.customer_phone?.trim())
@@ -152,6 +164,7 @@ Deno.serve(async (req) => {
         payment_status: 'unpaid',
         currency: 'EUR',
         items_snapshot: itemsSnapshot,
+        idempotency_key: body.idempotency_key?.trim() || null,
       })
       .select('id')
       .single()

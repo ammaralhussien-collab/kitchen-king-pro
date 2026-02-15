@@ -91,12 +91,14 @@ const CheckoutPage = () => {
       const token = session.data.session?.access_token;
       if (!token) throw new Error('Not authenticated');
 
+      const idempotencyKey = `${user!.id}-${Date.now()}-${crypto.randomUUID()}`;
       const payload = {
         order_type: form.orderType,
         customer_name: form.name.trim(),
         customer_phone: form.phone.trim(),
         delivery_address: form.orderType === 'delivery' ? form.address.trim() : undefined,
         notes: form.notes || undefined,
+        idempotency_key: idempotencyKey,
         items: items.map(ci => ({
           item_id: ci.itemId,
           quantity: ci.quantity,
