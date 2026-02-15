@@ -20,7 +20,7 @@ const AdminLayout = () => {
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
-        .in('role', ['admin', 'staff']);
+        .eq('role', 'admin');
       if (!data || data.length === 0) {
         navigate('/auth', { replace: true });
       } else {
