@@ -263,6 +263,7 @@ export type Database = {
           delivery_fee: number
           delivery_status: string
           id: string
+          idempotency_key: string | null
           items_snapshot: Json | null
           notes: string | null
           order_type: Database["public"]["Enums"]["order_type"]
@@ -289,6 +290,7 @@ export type Database = {
           delivery_fee?: number
           delivery_status?: string
           id?: string
+          idempotency_key?: string | null
           items_snapshot?: Json | null
           notes?: string | null
           order_type: Database["public"]["Enums"]["order_type"]
@@ -315,6 +317,7 @@ export type Database = {
           delivery_fee?: number
           delivery_status?: string
           id?: string
+          idempotency_key?: string | null
           items_snapshot?: Json | null
           notes?: string | null
           order_type?: Database["public"]["Enums"]["order_type"]
