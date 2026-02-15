@@ -80,6 +80,10 @@ const CheckoutPage = () => {
       toast.error(t('checkout.zeroTotal'));
       return;
     }
+    if (items.length > 30) {
+      toast.error('Maximum 30 items per order.');
+      return;
+    }
 
     setLoading(true);
     try {
