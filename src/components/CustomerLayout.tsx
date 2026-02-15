@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Link, Outlet, useLocation, Navigate } from "react-router-dom";
 import { ShoppingCart, UtensilsCrossed, User, Tag, Globe } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,7 +12,7 @@ const langLabels: Record<Language, string> = { de: "DE", en: "EN", ar: "AR" };
 
 const CustomerLayout = () => {
   const { itemCount } = useCart();
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, loading } = useAuth();
   const { t, lang, setLang } = useI18n();
   const location = useLocation();
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -33,6 +33,9 @@ const CustomerLayout = () => {
         }
       });
   }, []);
+
+  if (loading) return <div className="flex h-screen items-center justify-center"><span className="animate-pulse text-muted-foreground">Loading…</span></div>;
+  if (!user) return <Navigate to="/auth" replace />;
 
   return (
     <div className="min-h-screen bg-background">

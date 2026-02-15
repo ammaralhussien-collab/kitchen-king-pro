@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -42,6 +43,10 @@ const DriverPage = () => {
 
     return () => { supabase.removeChannel(channel); };
   }, [user, isDriver]);
+
+  if (loading) return <div className="flex h-screen items-center justify-center"><span className="animate-pulse text-muted-foreground">Loading…</span></div>;
+  if (!user) return <Navigate to="/auth" replace />;
+  if (!isDriver) return <div className="flex h-screen items-center justify-center text-muted-foreground">ما عندك صلاحية تدخل لهون</div>;
 
   const fetchOrders = async () => {
     const { data } = await supabase
