@@ -83,6 +83,19 @@ const CheckoutPage = () => {
 
     setLoading(true);
     try {
+      // Rate limit: max 5 orders per minute
+      const oneMinuteAgo = new Date(Date.now() - 60_000).toISOString();
+      const { count: recentCount } = await supabase
+        .from('orders')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user!.id)
+        .gte('created_at', oneMinuteAgo);
+      if ((recentCount ?? 0) >= 5) {
+        toast.error('Too many orders. Please wait a moment.');
+        setLoading(false);
+        return;
+      }
+
       // Build items snapshot
       const itemsSnapshot = items.map(ci => ({
         itemId: ci.itemId,
