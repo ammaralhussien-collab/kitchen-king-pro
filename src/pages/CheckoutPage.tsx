@@ -87,82 +87,43 @@ const CheckoutPage = () => {
 
     setLoading(true);
     try {
-      // Rate limit: insert tracking row then count recent
-      await supabase.from('order_rate_limits').insert({ user_id: user!.id });
-      const oneMinuteAgo = new Date(Date.now() - 60_000).toISOString();
-      const { count: recentCount } = await supabase
-        .from('order_rate_limits')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', user!.id)
-        .gte('created_at', oneMinuteAgo);
-      if ((recentCount ?? 0) > 5) {
-        toast.error('Too many requests. Please wait a moment.');
-        setLoading(false);
-        return;
-      }
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      if (!token) throw new Error('Not authenticated');
 
-      // Build items snapshot
-      const itemsSnapshot = items.map(ci => ({
-        itemId: ci.itemId,
-        name: ci.name,
-        price: ci.price,
-        quantity: ci.quantity,
-        addons: ci.addons,
-        notes: ci.notes,
-        total: (ci.price + ci.addons.reduce((s, a) => s + a.price, 0)) * ci.quantity,
-      }));
+      const payload = {
+        order_type: form.orderType,
+        customer_name: form.name.trim(),
+        customer_phone: form.phone.trim(),
+        delivery_address: form.orderType === 'delivery' ? form.address.trim() : undefined,
+        notes: form.notes || undefined,
+        items: items.map(ci => ({
+          item_id: ci.itemId,
+          quantity: ci.quantity,
+          addon_ids: ci.addons.map(a => a.id),
+          notes: ci.notes || '',
+        })),
+      };
 
-      const { data: order, error: orderErr } = await supabase
-        .from('orders')
-        .insert({
-          restaurant_id: restaurantId,
-          user_id: user!.id,
-          order_type: form.orderType,
-          payment_method: 'cash' as any, // DB enum value
-          customer_name: form.name.trim(),
-          customer_phone: form.phone.trim(),
-          delivery_address: form.orderType === 'delivery' ? form.address.trim() : null,
-          subtotal,
-          delivery_fee: form.orderType === 'delivery' ? deliveryFee : 0,
-          total,
-          notes: form.notes || null,
-          status: 'received' as any,
-          payment_status: 'unpaid',
-          currency: 'EUR',
-          items_snapshot: itemsSnapshot as any,
-          source: 'web',
-        })
-        .select('id')
-        .single();
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-order`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify(payload),
+        }
+      );
 
-      if (orderErr) throw orderErr;
-
-      const orderItems = items.map(cartItem => ({
-        order_id: order.id,
-        item_id: cartItem.itemId,
-        item_name: cartItem.name,
-        quantity: cartItem.quantity,
-        unit_price: cartItem.price,
-        addons: cartItem.addons as unknown as any,
-        notes: cartItem.notes || null,
-        total: (cartItem.price + cartItem.addons.reduce((s, a) => s + a.price, 0)) * cartItem.quantity,
-      }));
-
-      const { error: itemsErr } = await supabase.from('order_items').insert(orderItems);
-      if (itemsErr) throw itemsErr;
-
-      await supabase.from('payments').insert({
-        order_id: order.id,
-        method: 'cash' as any,
-        amount: total,
-        status: 'pending',
-      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Order failed');
 
       clearCart();
       toast.success(t('checkout.codSuccess'));
-      navigate(`/order/${order.id}`);
-    } catch (err: any) {
-      toast.error(err.message || t('error.orderFailed'));
+      navigate(`/order/${data.order_id}`);
     } finally {
       setLoading(false);
     }
