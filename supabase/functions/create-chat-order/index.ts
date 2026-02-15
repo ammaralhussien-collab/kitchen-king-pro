@@ -77,8 +77,13 @@ Deno.serve(async (req) => {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
-    if (!body.items || body.items.length === 0) {
+    if (!Array.isArray(body.items) || body.items.length === 0) {
       return new Response(JSON.stringify({ error: 'At least one item is required' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+    if (body.items.length > 30) {
+      return new Response(JSON.stringify({ error: 'Maximum 30 items per order' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
