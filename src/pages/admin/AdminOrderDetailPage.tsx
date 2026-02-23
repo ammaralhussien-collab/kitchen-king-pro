@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useI18n } from '@/i18n/I18nProvider';
+import { useAuth } from '@/contexts/AuthContext';
 import StatusBadge from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { ArrowLeft, Printer } from 'lucide-react';
+import { ArrowLeft, Printer, User } from 'lucide-react';
 import type { TranslationKey } from '@/i18n/translations';
 
 const allStatuses = ['received', 'accepted', 'preparing', 'ready', 'out_for_delivery', 'completed', 'canceled'];
@@ -24,6 +25,8 @@ interface Order {
   total: number;
   notes: string | null;
   created_at: string;
+  assigned_driver_id: string | null;
+  delivery_status: string;
 }
 
 interface OrderItem {
@@ -36,12 +39,22 @@ interface OrderItem {
   notes: string | null;
 }
 
+interface DriverOption {
+  user_id: string;
+  label: string;
+}
+
 const AdminOrderDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t, formatCurrency } = useI18n();
   const [order, setOrder] = useState<Order | null>(null);
   const [items, setItems] = useState<OrderItem[]>([]);
+
+  const { hasRole } = useAuth();
+  const canAssign = hasRole('admin') || hasRole('staff');
+  const [drivers, setDrivers] = useState<DriverOption[]>([]);
+  const [assigningDriver, setAssigningDriver] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -54,6 +67,19 @@ const AdminOrderDetailPage = () => {
     });
   }, [id]);
 
+  useEffect(() => {
+    if (!canAssign) return;
+    const fetchDrivers = async () => {
+      const { data: roleData } = await supabase.from('user_roles').select('user_id').eq('role', 'driver');
+      if (!roleData?.length) return;
+      const ids = roleData.map(d => d.user_id);
+      const { data: profiles } = await supabase.from('profiles').select('user_id, full_name').in('user_id', ids);
+      const map = new Map((profiles || []).map(p => [p.user_id, p.full_name]));
+      setDrivers(ids.map(uid => ({ user_id: uid, label: map.get(uid) || uid.slice(0, 8) })));
+    };
+    fetchDrivers();
+  }, [canAssign]);
+
   const updateStatus = async (status: string) => {
     if (!id) return;
     const { error } = await supabase.from('orders').update({ status: status as any }).eq('id', id);
@@ -61,6 +87,22 @@ const AdminOrderDetailPage = () => {
     setOrder(prev => prev ? { ...prev, status } : null);
     const statusKey = `status.${status}` as TranslationKey;
     toast.success(`${t('admin.statusUpdated')} ${t(statusKey)}`);
+  };
+
+  const assignDriver = async (driverId: string) => {
+    if (!id) return;
+    setAssigningDriver(true);
+    const { error } = await supabase
+      .from('orders')
+      .update({ assigned_driver_id: driverId, delivery_status: 'assigned' } as any)
+      .eq('id', id);
+    if (error) {
+      toast.error('Failed to assign driver');
+    } else {
+      setOrder(prev => prev ? { ...prev, assigned_driver_id: driverId, delivery_status: 'assigned' } : null);
+      toast.success('Driver assigned ✅');
+    }
+    setAssigningDriver(false);
   };
 
   if (!order) return <div className="flex h-96 items-center justify-center text-muted-foreground">{t('app.loading')}</div>;
@@ -113,6 +155,41 @@ const AdminOrderDetailPage = () => {
           </Select>
         )}
       </div>
+
+      {/* Assign Driver — admin/staff only, delivery orders */}
+      {canAssign && order.order_type === 'delivery' && (
+        <div className="mt-6 rounded-xl border border-border bg-card p-4">
+          <h3 className="font-display font-semibold mb-3 flex items-center gap-2">
+            <User className="h-4 w-4 text-muted-foreground" /> Assign Driver
+          </h3>
+          <div className="flex items-center gap-3">
+            <Select
+              value={order.assigned_driver_id || ''}
+              onValueChange={assignDriver}
+              disabled={assigningDriver}
+            >
+              <SelectTrigger className="w-56">
+                <SelectValue placeholder="Select a driver..." />
+              </SelectTrigger>
+              <SelectContent>
+                {drivers.map(d => (
+                  <SelectItem key={d.user_id} value={d.user_id}>{d.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {order.delivery_status && (
+              <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                order.delivery_status === 'assigned' ? 'bg-blue-100 text-blue-800' :
+                order.delivery_status === 'delivered' ? 'bg-green-100 text-green-800' :
+                'bg-muted text-muted-foreground'
+              }`}>
+                {order.delivery_status.replace(/_/g, ' ')}
+              </span>
+            )}
+          </div>
+          {drivers.length === 0 && <p className="mt-2 text-xs text-muted-foreground">No drivers found.</p>}
+        </div>
+      )}
 
       {/* Contact */}
       <div className="mt-6 rounded-xl border border-border bg-card p-4 space-y-2 text-sm">
