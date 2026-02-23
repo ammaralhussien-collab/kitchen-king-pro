@@ -16,6 +16,9 @@ import AdminMenuPage from "@/pages/admin/AdminMenuPage";
 import AdminSettingsPage from "@/pages/admin/AdminSettingsPage";
 import DispatchPage from "@/pages/admin/DispatchPage";
 import AdminUsersPage from "@/pages/admin/AdminUsersPage";
+import AdminOrdersPage from "@/pages/admin/AdminOrdersPage";
+import AdminOrderDetailPage from "@/pages/admin/AdminOrderDetailPage";
+import KitchenDisplayPage from "@/pages/admin/KitchenDisplayPage";
 import DriverPage from "@/pages/DriverPage";
 import OffersPage from "@/pages/OffersPage";
 import CheckoutPage from "@/pages/CheckoutPage";
@@ -46,10 +49,13 @@ const App = () => (
                 <Route path="/auth" element={<AuthPage />} />
                 <Route element={<AdminLayout />}>
                   <Route path="/admin/menu" element={<AdminMenuPage />} />
+                  <Route path="/admin/orders" element={<AdminOrdersPage />} />
+                  <Route path="/admin/orders/:id" element={<AdminOrderDetailPage />} />
                   <Route path="/admin/settings" element={<AdminSettingsPage />} />
                   <Route path="/admin/dispatch" element={<DispatchPage />} />
                   <Route path="/admin/users" element={<AdminUsersPage />} />
                 </Route>
+                <Route path="/kitchen" element={<KitchenDisplayPage />} />
                 <Route path="/driver" element={<DriverPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
