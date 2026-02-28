@@ -47,6 +47,7 @@ const DispatchPage = () => {
       .from('orders')
       .select('*')
       .eq('order_type', 'delivery')
+      .in('delivery_status', ['pending', 'assigned', 'out_for_delivery'])
       .order('created_at', { ascending: false });
     if (data) setOrders(data as any);
   };
