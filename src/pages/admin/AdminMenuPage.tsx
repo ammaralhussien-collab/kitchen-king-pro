@@ -121,7 +121,14 @@ const AdminMenuPage = () => {
   };
 
   const saveItem = async () => {
-    if (!editingItem?.name?.trim() || !editingItem?.price) return;
+    if (!editingItem?.name?.trim()) {
+      toast.error('يرجى إدخال اسم الصنف');
+      return;
+    }
+    if (editingItem?.price == null || editingItem.price <= 0) {
+      toast.error('يرجى إدخال سعر صحيح');
+      return;
+    }
     const payload: any = {
       name: editingItem.name,
       name_de: editingItem.name_de || editingItem.name,
