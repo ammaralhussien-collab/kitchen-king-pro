@@ -1,10 +1,11 @@
 import { Link, Outlet, useLocation, Navigate, useNavigate } from 'react-router-dom';
-import { UtensilsCrossed, Settings, ChefHat, Truck, Users, ClipboardList } from 'lucide-react';
+import { UtensilsCrossed, Settings, ChefHat, Truck, Users, ClipboardList, Lock } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/i18n/I18nProvider';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
+import { lockApp } from '@/components/PasswordGate';
 
 const AdminLayout = () => {
   const { user, isAdmin, loading } = useAuth();
@@ -68,6 +69,13 @@ const AdminLayout = () => {
         <Link to="/menu" className="mt-auto rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground">
           {t('app.backToMenu')}
         </Link>
+        <button
+          type="button"
+          onClick={lockApp}
+          className="mt-2 flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <Lock className="h-4 w-4" /> Lock
+        </button>
       </aside>
       <div className="flex-1">
         <header className="sticky top-0 z-40 flex h-14 items-center border-b border-border bg-background/95 px-4 backdrop-blur md:hidden">

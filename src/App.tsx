@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CartProvider } from "@/contexts/CartContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { I18nProvider } from "@/i18n/I18nProvider";
+import PasswordGate from "@/components/PasswordGate";
 import CustomerLayout from "@/components/CustomerLayout";
 import AdminLayout from "@/components/AdminLayout";
 import MenuPage from "@/pages/MenuPage";
@@ -30,6 +31,7 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <I18nProvider>
+      <PasswordGate>
       <AuthProvider>
         <CartProvider>
           <TooltipProvider>
@@ -63,6 +65,7 @@ const App = () => (
           </TooltipProvider>
         </CartProvider>
       </AuthProvider>
+      </PasswordGate>
     </I18nProvider>
   </QueryClientProvider>
 );

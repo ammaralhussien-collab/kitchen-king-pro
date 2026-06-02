@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, Outlet, useLocation, Navigate } from "react-router-dom";
-import { ShoppingCart, UtensilsCrossed, User, Tag, Globe } from "lucide-react";
+import { ShoppingCart, UtensilsCrossed, User, Tag, Globe, Lock } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useI18n } from "@/i18n/I18nProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { supportedLanguages, type Language } from "@/i18n/translations";
+import { lockApp } from "@/components/PasswordGate";
 
 const langLabels: Record<Language, string> = { de: "DE", en: "EN", ar: "AR" };
 
@@ -114,6 +115,15 @@ const CustomerLayout = () => {
                 )}
               </AnimatePresence>
             </Link>
+            <button
+              type="button"
+              onClick={lockApp}
+              title="Lock"
+              aria-label="Lock"
+              className="rounded-md p-2 text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <Lock className="h-5 w-5" />
+            </button>
           </div>
         </div>
       </header>
