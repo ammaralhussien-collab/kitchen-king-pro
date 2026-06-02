@@ -20,3 +20,9 @@ verify_jwt = false
 
 [functions.create-driver]
 verify_jwt = false
+
+[functions.verify-app-password]
+verify_jwt = false
+
+[functions.change-app-password]
+verify_jwt = false
