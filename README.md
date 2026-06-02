@@ -1,73 +1,196 @@
-# Welcome to your Lovable project
+# Restaurant Ordering App
 
-## Project info
+A multi-language (DE / EN / AR) restaurant ordering web app with admin, kitchen
+display, dispatch, and driver portals. Built with **Vite + React + TypeScript +
+Tailwind + shadcn/ui** and a **Supabase** backend (database, auth, storage,
+edge functions).
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+---
 
-## How can I edit this code?
+## 1. Tech Stack
 
-There are several ways of editing your application.
+- Vite 5, React 18, TypeScript 5
+- Tailwind CSS v3, shadcn/ui, Radix
+- Supabase (Postgres, Auth, Storage, Edge Functions)
+- React Router, TanStack Query, Framer Motion
 
-**Use Lovable**
+---
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## 2. Prerequisites
 
-Changes made via Lovable will be committed automatically to this repo.
+- Node.js 18+ (recommend 20+) and npm (or bun / pnpm)
+- A Supabase project (free tier works). You'll need:
+  - Project URL
+  - `anon` (publishable) API key
+  - `service_role` key (only used inside edge functions, never in the frontend)
 
-**Use your preferred IDE**
+---
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 3. Install
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+```bash
+npm install
+```
 
-Follow these steps:
+---
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## 4. Environment variables
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+Copy the example file and fill it in:
 
-# Step 3: Install the necessary dependencies.
-npm i
+```bash
+cp .env.example .env
+```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+Required variables (all prefixed with `VITE_` so Vite exposes them to the
+frontend):
+
+| Variable | Description |
+|----------|-------------|
+| `VITE_SUPABASE_URL` | `https://<project-ref>.supabase.co` |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase anon / publishable key |
+| `VITE_SUPABASE_PROJECT_ID` | Supabase project ref |
+
+Server-side secrets used by edge functions (set them in Supabase → Project
+Settings → Edge Functions → Secrets, **not** in `.env`):
+
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `LOVABLE_API_KEY` (only if you keep the AI translation features; otherwise
+  remove the `translate-*` edge functions or swap them for your own AI key)
+
+---
+
+## 5. Run locally
+
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Open http://localhost:8080
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+---
 
-**Use GitHub Codespaces**
+## 6. Build for production
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```bash
+npm run build
+```
 
-## What technologies are used for this project?
+The static site is emitted to `dist/`. Preview locally with:
 
-This project is built with:
+```bash
+npm run preview
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+---
 
-## How can I deploy this project?
+## 7. Backend setup (Supabase)
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+The app expects the database schema, RLS policies, storage bucket
+(`menu-images`), and edge functions that live under `supabase/`.
 
-## Can I connect a custom domain to my Lovable project?
+1. Install the Supabase CLI: https://supabase.com/docs/guides/cli
+2. Link the project:
+   ```bash
+   supabase link --project-ref <your-project-ref>
+   ```
+3. Push migrations:
+   ```bash
+   supabase db push
+   ```
+4. Deploy edge functions:
+   ```bash
+   supabase functions deploy
+   ```
+5. Create the `menu-images` storage bucket (public) if it doesn't exist.
 
-Yes, you can!
+---
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## 8. Deploy
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+The frontend is a plain static SPA. Any static host works. Make sure the host
+rewrites all unknown paths to `index.html` (SPA fallback).
+
+### Vercel
+1. Push the repo to GitHub.
+2. Import the repo on https://vercel.com/new
+3. Framework: **Vite**. Build command: `npm run build`. Output: `dist`.
+4. Add the `VITE_*` env vars in Project Settings → Environment Variables.
+5. Deploy.
+
+### Netlify
+1. New site → import from Git.
+2. Build command: `npm run build`. Publish directory: `dist`.
+3. Add the `VITE_*` env vars.
+4. Create `public/_redirects` with `/* /index.html 200` if SPA refresh 404s.
+
+### Hostinger / cPanel / any static host
+1. Run `npm run build` locally.
+2. Upload the contents of `dist/` to `public_html/` (or the web root).
+3. Configure SPA fallback. For Apache, add `.htaccess` in the web root:
+   ```apache
+   <IfModule mod_rewrite.c>
+     RewriteEngine On
+     RewriteBase /
+     RewriteRule ^index\.html$ - [L]
+     RewriteCond %{REQUEST_FILENAME} !-f
+     RewriteCond %{REQUEST_FILENAME} !-d
+     RewriteRule . /index.html [L]
+   </IfModule>
+   ```
+
+### Your own server (Nginx)
+```nginx
+location / {
+  try_files $uri /index.html;
+}
+```
+
+### Docker (optional)
+Serve `dist/` with any static server (nginx, caddy, serve, etc.).
+
+---
+
+## 9. App password protection
+
+The whole app is gated by a password screen. The password is **not**
+hardcoded — it lives as a SHA-256 hash in the Supabase `app_config` table
+(`id = 'app_password'`).
+
+- Default password on first install: `123456`
+- Change it from the UI: **Admin → Settings → Change App Password**
+- The change is performed by the `change-app-password` edge function.
+- To reset it manually, update the row in the `app_config` table with a new
+  SHA-256 hash of your desired password.
+
+---
+
+## 10. Project layout
+
+```
+src/
+  components/        UI + layout (PasswordGate, AdminLayout, ...)
+  contexts/          Auth + Cart providers
+  i18n/              DE / EN / AR translations + RTL
+  integrations/      Auto-generated Supabase client + types (do not edit)
+  lib/               Helpers (whatsapp, localize, utils)
+  pages/             Customer + admin + driver + kitchen pages
+supabase/
+  migrations/        SQL migrations
+  functions/         Edge functions (orders, password, translations, ...)
+  config.toml        Function settings
+```
+
+---
+
+## 11. Notes about exporting from Lovable
+
+- `lovable-tagger` (in `vite.config.ts`) only runs in dev mode and is harmless
+  if left installed; you can remove it from `package.json` and `vite.config.ts`
+  if you prefer.
+- `src/integrations/supabase/client.ts` and `types.ts` are auto-generated by
+  Lovable. Outside Lovable you can edit them freely or regenerate types with
+  `supabase gen types typescript --linked > src/integrations/supabase/types.ts`.
+- No private keys are committed in this repo. All secrets live in Supabase or
+  your hosting provider's environment.
