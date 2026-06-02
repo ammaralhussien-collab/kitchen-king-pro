@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_config: {
+        Row: {
+          id: string
+          password_hash: string
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          password_hash: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          password_hash?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string | null
