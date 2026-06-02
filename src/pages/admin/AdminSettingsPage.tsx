@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { Upload, ImageIcon } from 'lucide-react';
+import { Upload, ImageIcon, KeyRound } from 'lucide-react';
+import ChangeAppPasswordModal from '@/components/ChangeAppPasswordModal';
 
 interface Restaurant {
   id: string;
@@ -30,6 +31,7 @@ const AdminSettingsPage = () => {
   const [loading, setLoading] = useState(false);
   const [heroUploading, setHeroUploading] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
+  const [pwOpen, setPwOpen] = useState(false);
   const heroFileRef = useRef<HTMLInputElement>(null);
   const logoFileRef = useRef<HTMLInputElement>(null);
   const { t } = useI18n();
@@ -184,6 +186,18 @@ const AdminSettingsPage = () => {
         <Button onClick={save} className="w-full" disabled={loading}>
           {loading ? t('app.saving') : t('admin.saveSettings')}
         </Button>
+
+        <div className="space-y-3 rounded-xl border border-border bg-card p-4">
+          <h3 className="font-display font-semibold">App Access</h3>
+          <p className="text-xs text-muted-foreground">
+            Update the shared password used to unlock the app. You will be locked out and must sign in again with the new password.
+          </p>
+          <Button type="button" variant="outline" onClick={() => setPwOpen(true)} className="w-full sm:w-auto">
+            <KeyRound className="me-2 h-4 w-4" /> Change App Password
+          </Button>
+        </div>
+
+        <ChangeAppPasswordModal open={pwOpen} onOpenChange={setPwOpen} />
       </div>
     </div>
   );
