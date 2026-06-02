@@ -3,8 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Lock } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
-const APP_PASSWORD = '123456';
 const STORAGE_KEY = 'app_unlocked';
 
 export const lockApp = () => {
@@ -16,6 +16,7 @@ const PasswordGate = ({ children }: { children: ReactNode }) => {
   const [unlocked, setUnlocked] = useState(() => sessionStorage.getItem(STORAGE_KEY) === '1');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const handler = () => setUnlocked(sessionStorage.getItem(STORAGE_KEY) === '1');
@@ -23,15 +24,27 @@ const PasswordGate = ({ children }: { children: ReactNode }) => {
     return () => window.removeEventListener('app-lock-changed', handler);
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === APP_PASSWORD) {
-      sessionStorage.setItem(STORAGE_KEY, '1');
-      setUnlocked(true);
-      setError('');
-      setPassword('');
-    } else {
+    if (!password) return;
+    setSubmitting(true);
+    try {
+      const { data, error: fnErr } = await supabase.functions.invoke('verify-app-password', {
+        body: { password },
+      });
+      if (fnErr) throw fnErr;
+      if (data?.valid) {
+        sessionStorage.setItem(STORAGE_KEY, '1');
+        setUnlocked(true);
+        setError('');
+        setPassword('');
+      } else {
+        setError('Incorrect password. Please try again.');
+      }
+    } catch {
       setError('Incorrect password. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -60,7 +73,9 @@ const PasswordGate = ({ children }: { children: ReactNode }) => {
             />
             {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
           </div>
-          <Button type="submit" className="w-full">Unlock</Button>
+          <Button type="submit" className="w-full" disabled={submitting}>
+            {submitting ? 'Checking…' : 'Unlock'}
+          </Button>
         </form>
       </div>
     </div>
